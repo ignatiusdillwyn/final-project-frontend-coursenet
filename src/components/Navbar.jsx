@@ -9,7 +9,7 @@ const Navbar = () => {
       {/* LEFT - LOGO */}
       <div className="flex-1">
         <Link to="/" className="text-xl font-bold">
-          📚 TokoBuku
+          📚 TokoPakEdi
         </Link>
       </div>
 

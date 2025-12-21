@@ -13,6 +13,7 @@ const register = async (payload) => {
 };
 
 const login = async (payload) => {
+    console.log('Login payload:', payload); // Debugging line
     const response = await axios.post(`${URL}/login`, payload, {
         headers: {
             'Content-Type': 'application/json', // Tentukan content type
