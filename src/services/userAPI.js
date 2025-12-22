@@ -3,7 +3,8 @@ import axios from "axios";
 const URL = import.meta.env.VITE_USER_API;
 
 const register = async (payload) => {
-    const response = await axios.post(`${URL}/add`, payload, {
+    console.log('Register payload:', payload); // Debugging line
+    const response = await axios.post(`${URL}/create`, payload, {
         headers: {
             'Content-Type': 'application/json', // Tentukan content type
             // 'Authorization': `Bearer ${token}`, // Jika butuh auth

@@ -9,9 +9,9 @@ import About from "../pages/About";
 import BookCreate from "../pages/BookCreate";
 import BookDetail from "../pages/BookDetail";
 import Books from "../pages/Books";
-import BookUpdate from "../pages/BookUpdate";
 import Contact from "../pages/Contact";
 import Login from "../pages/Login";
+import Register from "../pages/Register";
 
 const router = createBrowserRouter([
     {
@@ -38,10 +38,6 @@ const router = createBrowserRouter([
                 element: <Books />
             },
             {
-                path: "/bookUpdate/:id",
-                element: <BookUpdate />
-            },
-            {
                 path: "/contact",
                 element: <Contact />
             },
@@ -57,6 +53,10 @@ const router = createBrowserRouter([
             {
                 path: "/login",
                 element: <Login />
+            },
+            {
+                path: "/register",
+                element: <Register />
             },
         ]
     }
