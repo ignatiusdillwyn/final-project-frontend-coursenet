@@ -163,7 +163,7 @@ const Products = () => {
 
     // Handle add new product
     const handleAddProduct = () => {
-        navigate('/products/add');
+        navigate('/addProduct');
     };
 
     if (loading) {
