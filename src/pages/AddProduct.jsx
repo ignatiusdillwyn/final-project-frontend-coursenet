@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addProduct } from '../services/productAPI';
+import Swal from 'sweetalert2';
 
 const AddProduct = () => {
   const [formData, setFormData] = useState({
@@ -11,8 +12,6 @@ const AddProduct = () => {
     description: ''
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -27,22 +26,42 @@ const AddProduct = () => {
     const { name, qty, price, description } = formData;
     
     if (!name.trim()) {
-      setError('Product name is required');
+      Swal.fire({
+        icon: 'error',
+        title: 'Validation Error',
+        text: 'Product name is required',
+        confirmButtonColor: '#4f46e5',
+      });
       return false;
     }
 
     if (!qty.trim() || parseInt(qty) <= 0) {
-      setError('Quantity must be greater than 0');
+      Swal.fire({
+        icon: 'error',
+        title: 'Validation Error',
+        text: 'Quantity must be greater than 0',
+        confirmButtonColor: '#4f46e5',
+      });
       return false;
     }
 
     if (!price.trim() || parseFloat(price) <= 0) {
-      setError('Price must be greater than 0');
+      Swal.fire({
+        icon: 'error',
+        title: 'Validation Error',
+        text: 'Price must be greater than 0',
+        confirmButtonColor: '#4f46e5',
+      });
       return false;
     }
 
     if (!description.trim()) {
-      setError('Description is required');
+      Swal.fire({
+        icon: 'error',
+        title: 'Validation Error',
+        text: 'Description is required',
+        confirmButtonColor: '#4f46e5',
+      });
       return false;
     }
 
@@ -51,55 +70,85 @@ const AddProduct = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
 
     if (!validateForm()) {
       return;
     }
 
-    setLoading(true);
+    // Show confirmation dialog
+    const result = await Swal.fire({
+      title: 'Add Product?',
+      text: 'Are you sure you want to add this product?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#4f46e5',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, Add Product',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      showLoaderOnConfirm: true,
+      preConfirm: async () => {
+        try {
+          const token = localStorage.getItem('token');
+          
+          if (!token) {
+            navigate('/login');
+            return false;
+          }
 
-    try {
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        navigate('/login');
-        return;
-      }
+          // Prepare payload
+          const payload = {
+            name: formData.name,
+            qty: parseInt(formData.qty),
+            price: parseInt(formData.price),
+            image: formData.image || '',
+            description: formData.description
+          };
 
-      // Prepare payload
-      const payload = {
-        name: formData.name,
-        qty: parseInt(formData.qty),
-        price: parseInt(formData.price),
-        image: formData.image || '', // Empty string if no image
-        description: formData.description
-      };
+          return await addProduct(payload, token);
+        } catch (err) {
+          Swal.showValidationMessage(
+            `Failed: ${err.response?.data?.message || 'Please try again'}`
+          );
+          return false;
+        }
+      },
+      allowOutsideClick: () => !Swal.isLoading()
+    });
 
-      console.log('Adding product with payload:', payload);
-      
-      const response = await addProduct(payload, token);
-      
-      console.log('Product added successfully:', response);
-      
-      setSuccess('Product added successfully! Redirecting...');
-      
-      // Redirect to products page after 2 seconds
-      setTimeout(() => {
-        navigate('/products');
-      }, 2000);
-      
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add product. Please try again.');
-      console.error('Error adding product:', err);
-    } finally {
-      setLoading(false);
+    if (result.isConfirmed) {
+      // Show success message
+      Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: 'Product added successfully!',
+        confirmButtonColor: '#4f46e5',
+        timer: 1500,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        willClose: () => {
+          navigate('/products');
+        }
+      });
     }
   };
 
   const handleCancel = () => {
-    navigate('/products');
+    Swal.fire({
+      title: 'Discard Changes?',
+      text: 'Are you sure you want to leave? Your changes will not be saved.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#4f46e5',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, Discard',
+      cancelButtonText: 'Continue Editing',
+      reverseButtons: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+        navigate('/products');
+      }
+    });
   };
 
   // Format price while typing
@@ -117,6 +166,39 @@ const AddProduct = () => {
     }));
   };
 
+  // Reset form
+  const handleReset = () => {
+    Swal.fire({
+      title: 'Reset Form?',
+      text: 'All entered data will be cleared.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#4f46e5',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, Reset',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setFormData({
+          name: '',
+          qty: '',
+          price: '',
+          image: '',
+          description: ''
+        });
+        Swal.fire({
+          icon: 'success',
+          title: 'Form Reset',
+          text: 'Form has been cleared successfully',
+          timer: 1500,
+          showConfirmButton: false,
+          confirmButtonColor: '#4f46e5',
+        });
+      }
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
@@ -126,7 +208,7 @@ const AddProduct = () => {
             <div>
               <button
                 onClick={handleCancel}
-                className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+                className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition duration-200"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -137,46 +219,14 @@ const AddProduct = () => {
               <p className="text-gray-600 mt-2">Fill in the details to add a new product to your inventory</p>
             </div>
             <div className="hidden md:block">
-              <div className="bg-indigo-100 p-3 rounded-lg">
-                <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-3 rounded-lg shadow-lg">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Success Message */}
-        {success && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-green-800">{success}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-red-800">{error}</p>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Form Card */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
@@ -200,7 +250,6 @@ const AddProduct = () => {
                     onChange={handleChange}
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
                     placeholder="Enter product name"
-                    disabled={loading}
                   />
                 </div>
               </div>
@@ -226,7 +275,6 @@ const AddProduct = () => {
                       min="1"
                       className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
                       placeholder="Enter quantity"
-                      disabled={loading}
                     />
                   </div>
                 </div>
@@ -253,7 +301,6 @@ const AddProduct = () => {
                         onChange={handlePriceChange}
                         className="block w-full pl-3 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
                         placeholder="Enter price"
-                        disabled={loading}
                       />
                     </div>
                     {formData.price && (
@@ -283,7 +330,6 @@ const AddProduct = () => {
                     onChange={handleChange}
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
                     placeholder="https://example.com/image.jpg"
-                    disabled={loading}
                   />
                 </div>
                 <p className="text-sm text-gray-500 mt-2">
@@ -304,7 +350,6 @@ const AddProduct = () => {
                     rows="6"
                     className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
                     placeholder="Enter product description..."
-                    disabled={loading}
                   />
                 </div>
                 <p className="text-sm text-gray-500 mt-2">
@@ -361,40 +406,31 @@ const AddProduct = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-6 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  disabled={loading}
-                  className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition duration-200 font-medium"
-                >
-                  Cancel
-                </button>
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 pt-6 border-t border-gray-200">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition duration-200 font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition duration-200 font-medium"
+                  >
+                    Reset Form
+                  </button>
+                </div>
                 <button
                   type="submit"
-                  disabled={loading}
-                  className={`px-6 py-3 rounded-lg font-medium text-white transition duration-200 ${
-                    loading
-                      ? 'bg-indigo-400 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
-                  }`}
+                  className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg font-medium transition duration-200 flex items-center"
                 >
-                  {loading ? (
-                    <div className="flex items-center justify-center">
-                      <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Adding Product...
-                    </div>
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                      Add Product
-                    </>
-                  )}
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Add Product
                 </button>
               </div>
             </form>
