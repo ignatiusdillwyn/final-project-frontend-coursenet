@@ -12,6 +12,7 @@ import Login from "../pages/Login";
 import Register from "../pages/Register";
 import Products from "../pages/Products";
 import UpdateProduct from "../pages/UpdateProduct";
+import AddProduct from "../pages/AddProduct";
 
 const router = createBrowserRouter([
     {
@@ -28,6 +29,10 @@ const router = createBrowserRouter([
             {
                 path: "/updateProduct/:id",
                 element: <UpdateProduct />
+            },
+            {
+                path: "/addProduct",
+                element: <AddProduct />
             },
             {
                 path: "/about",
