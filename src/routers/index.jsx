@@ -8,10 +8,10 @@ import Home from "../pages/Home";
 import About from "../pages/About";
 import BookCreate from "../pages/BookCreate";
 import BookDetail from "../pages/BookDetail";
-import Books from "../pages/Books";
 import Contact from "../pages/Contact";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
+import Products from "../pages/Products";
 
 const router = createBrowserRouter([
     {
@@ -20,6 +20,10 @@ const router = createBrowserRouter([
             {
                 path: "/",
                 element: <Home />
+            },
+            {
+                path: "/products",
+                element: <Products />
             },
             {
                 path: "/about",
@@ -32,10 +36,6 @@ const router = createBrowserRouter([
             {
                 path: "/books/:id",
                 element: <BookDetail />
-            },
-            {
-                path: "/books",
-                element: <Books />
             },
             {
                 path: "/contact",

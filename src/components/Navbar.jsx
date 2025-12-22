@@ -16,10 +16,10 @@ const Navbar = () => {
       {/* CENTER - MENU */}
       <div className="flex gap-8 flex-1 justify-center">
         <NavLink
-          to="/books"
+          to="/products"
           className={({ isActive }) => (isActive ? activeClass : baseClass)}
         >
-          Books
+          Products
         </NavLink>
 
         <NavLink
@@ -37,7 +37,7 @@ const Navbar = () => {
         </NavLink>
       </div>
 
-      {/* RIGHT - LOGIN */}
+      {/* RIGHT - LOGIN
       <div className="flex-1 flex justify-end">
         <NavLink
           to="/login"
@@ -49,7 +49,7 @@ const Navbar = () => {
         >
           Login
         </NavLink>
-      </div>
+      </div> */}
     </nav>
   );
 };
