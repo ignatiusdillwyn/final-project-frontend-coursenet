@@ -145,6 +145,7 @@ const Products = () => {
 
         try {
             const token = localStorage.getItem('token');
+            console.log('delete product id:', selectedProduct.id, 'with token:', token);
             await deleteProduct(selectedProduct.id, token);
 
             // Remove deleted product from state
@@ -158,7 +159,7 @@ const Products = () => {
 
     // Handle edit product
     const handleEdit = (product) => {
-        navigate(`/products/edit/${product.id}`, { state: { product } });
+        navigate(`/updateProduct/${product.id}`);
     };
 
     // Handle add new product

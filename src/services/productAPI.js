@@ -22,7 +22,7 @@ const fetchAllProduct = async (token) => {
     return response.data;
 };
 
-const updateProduct = async (id) => {
+const updateProduct = async (id, payload, token) => {
     const response = await axios.put(`${URL}/edit/${id}`, payload, {
         headers: {
             'Content-Type': 'application/json',
@@ -32,7 +32,7 @@ const updateProduct = async (id) => {
     return response.data;
 };
 
-const deleteProduct = async (id) => {
+const deleteProduct = async (id, token) => {
     const response = await axios.delete(`${URL}/delete/${id}`, {
         headers: {
             'Content-Type': 'application/json',

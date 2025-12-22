@@ -6,12 +6,12 @@ import AuthLayout from "../layouts/AuthLayout";
 //Pages
 import Home from "../pages/Home";
 import About from "../pages/About";
-import AddProduct from "../pages/AddProduct";
 import BookDetail from "../pages/BookDetail";
 import Contact from "../pages/Contact";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 import Products from "../pages/Products";
+import UpdateProduct from "../pages/UpdateProduct";
 
 const router = createBrowserRouter([
     {
@@ -26,12 +26,12 @@ const router = createBrowserRouter([
                 element: <Products />
             },
             {
-                path: "/about",
-                element: <About />
+                path: "/updateProduct/:id",
+                element: <UpdateProduct />
             },
             {
-                path: "/addProduct",
-                element: <AddProduct />
+                path: "/about",
+                element: <About />
             },
             {
                 path: "/books/:id",
