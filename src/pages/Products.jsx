@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchAllProduct, deleteProduct, searchProduct } from '../services/productAPI';
 import Swal from 'sweetalert2';
@@ -15,7 +15,11 @@ const Products = () => {
     const [hoveredCard, setHoveredCard] = useState(null);
     const [pageLoaded, setPageLoaded] = useState(false);
     const [statsAnimated, setStatsAnimated] = useState([false, false, false]);
+    const [imageLoading, setImageLoading] = useState({});
     const navigate = useNavigate();
+
+    // API base URL (sesuaikan dengan backend Anda)
+    const API_BASE_URL = 'http://localhost:3000'; // Ganti dengan URL backend Anda
 
     // Format harga ke Rupiah
     const formatPrice = (price) => {
@@ -36,11 +40,44 @@ const Products = () => {
         });
     };
 
+    // Get full image URL
+    const getImageUrl = (imagePath) => {
+        if (!imagePath) return null;
+        
+        // Jika sudah full URL, return langsung
+        if (imagePath.startsWith('http')) {
+            return imagePath;
+        }
+        
+        // Jika relative path, tambahkan base URL
+        // Hapus 'uploads/' di depan jika ada
+        const cleanPath = imagePath.startsWith('uploads/') ? imagePath : `uploads/${imagePath}`;
+        return `${API_BASE_URL}/${cleanPath}`;
+    };
+
+    // Handle image load
+    const handleImageLoad = (productId) => {
+        setImageLoading(prev => ({
+            ...prev,
+            [productId]: false
+        }));
+    };
+
+    // Handle image error
+    const handleImageError = (productId) => {
+        setImageLoading(prev => ({
+            ...prev,
+            [productId]: false
+        }));
+    };
+
     // Animate stats numbers
     const animateNumbers = (target, elementId, duration = 2000) => {
         let start = 0;
         const increment = target / (duration / 16);
         const element = document.getElementById(elementId);
+        
+        if (!element) return;
         
         const timer = setInterval(() => {
             start += increment;
@@ -76,6 +113,17 @@ const Products = () => {
         }, 100);
         return () => clearTimeout(timer);
     }, []);
+
+    // Initialize image loading states
+    useEffect(() => {
+        const initialLoadingStates = {};
+        products.forEach(product => {
+            if (product.image) {
+                initialLoadingStates[product.id] = true;
+            }
+        });
+        setImageLoading(initialLoadingStates);
+    }, [products]);
 
     // Floating particles effect
     useEffect(() => {
@@ -142,6 +190,7 @@ const Products = () => {
     const loadAllProducts = async () => {
         try {
             setLoading(true);
+            setError('');
             const token = localStorage.getItem('token');
 
             if (!token) {
@@ -150,14 +199,36 @@ const Products = () => {
             }
 
             const response = await fetchAllProduct(token);
-            setProducts(response.data || []);
-            setError('');
+            console.log('Fetched products:', response);
             
-            // Reset animation states for new data
-            setStatsAnimated([false, false, false]);
+            if (response && response.data) {
+                // Process products to ensure image URLs are complete
+                const processedProducts = response.data.map(product => ({
+                    ...product,
+                    // Add full image URL
+                    imageUrl: getImageUrl(product.image)
+                }));
+                
+                setProducts(processedProducts);
+                
+                // Initialize loading states for images
+                const loadingStates = {};
+                processedProducts.forEach(product => {
+                    if (product.imageUrl) {
+                        loadingStates[product.id] = true;
+                    }
+                });
+                setImageLoading(loadingStates);
+                
+            } else {
+                setProducts([]);
+                setError('No products found');
+            }
+            
         } catch (err) {
-            setError('Failed to load products');
             console.error('Error fetching products:', err);
+            setError('Failed to load products. Please try again.');
+            setProducts([]);
         } finally {
             setLoading(false);
         }
@@ -182,17 +253,34 @@ const Products = () => {
             const response = await searchProduct(searchQuery, token);
 
             if (response.data && response.data.length > 0) {
-                setProducts(response.data);
+                // Process products to ensure image URLs are complete
+                const processedProducts = response.data.map(product => ({
+                    ...product,
+                    imageUrl: getImageUrl(product.image)
+                }));
+                
+                setProducts(processedProducts);
                 setError('');
+                
+                // Initialize loading states
+                const loadingStates = {};
+                processedProducts.forEach(product => {
+                    if (product.imageUrl) {
+                        loadingStates[product.id] = true;
+                    }
+                });
+                setImageLoading(loadingStates);
+                
             } else {
                 setProducts([]);
                 setError('No products found matching your search');
             }
         } catch (err) {
             console.error('Error searching products:', err);
+            // Fallback to client-side filtering
             const filtered = products.filter(product =>
-                product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                product.description.toLowerCase().includes(searchQuery.toLowerCase())
+                product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                product.description?.toLowerCase().includes(searchQuery.toLowerCase())
             );
             setProducts(filtered);
 
@@ -249,9 +337,20 @@ const Products = () => {
             html: `
                 <div class="text-center">
                     <div class="mb-4">
-                        <svg class="animate-spin-slow mx-auto w-16 h-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                        </svg>
+                        ${product.imageUrl ? `
+                            <div class="relative mx-auto w-32 h-32 overflow-hidden rounded-lg border-2 border-red-500/50">
+                                <img src="${product.imageUrl}" alt="${product.name}" class="w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-red-900/50 backdrop-blur-sm flex items-center justify-center">
+                                    <svg class="w-16 h-16 text-red-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        ` : `
+                            <svg class="animate-spin-slow mx-auto w-16 h-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        `}
                     </div>
                     <p class="text-lg font-semibold text-gray-800">This action cannot be undone!</p>
                     <p class="text-gray-600 mt-2">All data for <span class="font-bold text-red-600">${product.name}</span> will be permanently deleted.</p>
@@ -305,6 +404,7 @@ const Products = () => {
                         </svg>
                     </div>
                     <p class="mt-4 text-lg font-semibold text-gray-800">Product deleted successfully!</p>
+                    ${product.imageUrl ? `<img src="${product.imageUrl}" alt="${product.name}" class="w-24 h-24 object-cover rounded-lg mx-auto mt-4 border border-gray-200">` : ''}
                 `,
                 timer: 2000,
                 timerProgressBar: true,
@@ -327,10 +427,10 @@ const Products = () => {
             
             setTimeout(() => {
                 ripple.remove();
-                navigate(`/updateProduct/${product.id}`);
+                navigate(`/updateProduct/${product.id}`, { state: { product } });
             }, 600);
         } else {
-            navigate(`/updateProduct/${product.id}`);
+            navigate(`/updateProduct/${product.id}`, { state: { product } });
         }
     };
 
@@ -356,6 +456,38 @@ const Products = () => {
 
     const handleCardMouseLeave = () => {
         setHoveredCard(null);
+    };
+
+    // Handle image preview click
+    const handleImagePreview = (product) => {
+        if (!product.imageUrl) return;
+
+        Swal.fire({
+            title: product.name,
+            html: `
+                <div class="text-center">
+                    <img src="${product.imageUrl}" 
+                         alt="${product.name}" 
+                         class="max-w-full h-auto rounded-lg border border-gray-300 mx-auto"
+                         onload="this.parentElement.parentElement.classList.remove('loading')"
+                         onerror="this.onerror=null; this.src='https://via.placeholder.com/400x300?text=Image+Not+Found'">
+                    <div class="mt-4 text-sm text-gray-600">
+                        <p><strong>Price:</strong> ${formatPrice(product.price)}</p>
+                        <p><strong>Stock:</strong> ${product.qty} units</p>
+                        <p><strong>Added:</strong> ${formatDate(product.createdAt)}</p>
+                    </div>
+                </div>
+            `,
+            showCloseButton: true,
+            showConfirmButton: false,
+            width: 'auto',
+            padding: '2rem',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            customClass: {
+                popup: 'rounded-2xl shadow-2xl',
+                title: 'text-white text-xl font-bold mb-4'
+            }
+        });
     };
 
     if (loading) {
@@ -418,6 +550,11 @@ const Products = () => {
                 @keyframes pulse-glow {
                     0%, 100% { opacity: 0.5; }
                     50% { opacity: 1; }
+                }
+                
+                @keyframes imageLoad {
+                    0% { opacity: 0; transform: scale(0.9); }
+                    100% { opacity: 1; transform: scale(1); }
                 }
                 
                 .loading-spinner {
@@ -510,6 +647,52 @@ const Products = () => {
                 }
                 .animate-slide-in { animation: slideIn 0.6s ease-out; }
                 .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+                .animate-image-load { animation: imageLoad 0.5s ease-out forwards; }
+                
+                .image-container {
+                    position: relative;
+                    width: 100%;
+                    height: 100%;
+                    overflow: hidden;
+                }
+                
+                .image-loading {
+                    background: linear-gradient(90deg, #2d2d2d 25%, #3a3a3a 50%, #2d2d2d 75%);
+                    background-size: 200% 100%;
+                    animation: shimmer 1.5s infinite;
+                }
+                
+                .image-error {
+                    background: linear-gradient(135deg, #4a5568, #2d3748);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                
+                .image-placeholder {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    color: #9ca3af;
+                }
+                
+                .image-clickable {
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                }
+                
+                .image-clickable:hover {
+                    opacity: 0.9;
+                    transform: scale(1.02);
+                }
+                
+                .line-clamp-2 {
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
+                }
             `}</style>
 
             <div className={`mt-20 min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 transition-all duration-1000 ${pageLoaded ? 'opacity-100' : 'opacity-0'}`}>
@@ -811,130 +994,174 @@ const Products = () => {
                                     )}
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                        {products.map((product, index) => (
-                                            <div
-                                                key={product.id}
-                                                data-product-id={product.id}
-                                                onMouseEnter={() => handleCardMouseEnter(product.id)}
-                                                onMouseLeave={handleCardMouseLeave}
-                                                className={`relative group overflow-hidden rounded-2xl transition-all duration-500 animate-slide-in ${
-                                                    hoveredCard === product.id 
-                                                        ? 'transform scale-[1.02]' 
-                                                        : ''
-                                                }`}
-                                                style={{
-                                                    animationDelay: `${0.1 * index}s`,
-                                                    animationFillMode: 'both'
-                                                }}
-                                            >
-                                                {/* Card Glow Effect */}
-                                                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
-                                                
-                                                {/* Main Card */}
-                                                <div className="relative bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-lg border border-gray-700/50 group-hover:border-purple-500/50 transition-all duration-300 h-full rounded-2xl overflow-hidden">
-                                                    {/* Product Image with Hover Effect */}
-                                                    <div className="relative h-48 overflow-hidden">
-                                                        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-purple-900/20 to-indigo-900/20 z-10"></div>
-                                                        {product.image ? (
-                                                            <img
-                                                                src={product.image}
-                                                                alt={product.name}
-                                                                className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-                                                            />
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center">
-                                                                <div className="relative">
-                                                                    <div className="w-24 h-24 border-4 border-gray-700/50 border-t-purple-500 rounded-full animate-spin"></div>
-                                                                    <div className="absolute inset-0 flex items-center justify-center">
-                                                                        <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                                        </svg>
+                                        {products.map((product, index) => {
+                                            const hasImage = product.imageUrl && product.image;
+                                            const isLoading = imageLoading[product.id];
+                                            const imageUrl = product.imageUrl;
+
+                                            return (
+                                                <div
+                                                    key={product.id}
+                                                    data-product-id={product.id}
+                                                    onMouseEnter={() => handleCardMouseEnter(product.id)}
+                                                    onMouseLeave={handleCardMouseLeave}
+                                                    className={`relative group overflow-hidden rounded-2xl transition-all duration-500 animate-slide-in ${
+                                                        hoveredCard === product.id 
+                                                            ? 'transform scale-[1.02]' 
+                                                            : ''
+                                                    }`}
+                                                    style={{
+                                                        animationDelay: `${0.1 * index}s`,
+                                                        animationFillMode: 'both'
+                                                    }}
+                                                >
+                                                    {/* Card Glow Effect */}
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
+                                                    
+                                                    {/* Main Card */}
+                                                    <div className="relative bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-lg border border-gray-700/50 group-hover:border-purple-500/50 transition-all duration-300 h-full rounded-2xl overflow-hidden">
+                                                        {/* Product Image with Hover Effect */}
+                                                        <div className="relative h-48 overflow-hidden">
+                                                            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-purple-900/20 to-indigo-900/20 z-10"></div>
+                                                            
+                                                            {hasImage ? (
+                                                                <div 
+                                                                    className={`image-container ${isLoading ? 'image-loading' : 'animate-image-load'}`}
+                                                                    onClick={() => handleImagePreview(product)}
+                                                                >
+                                                                    <img
+                                                                        src={imageUrl}
+                                                                        alt={product.name}
+                                                                        className={`w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 image-clickable ${
+                                                                            isLoading ? 'opacity-0' : 'opacity-100'
+                                                                        }`}
+                                                                        onLoad={() => handleImageLoad(product.id)}
+                                                                        onError={() => handleImageError(product.id)}
+                                                                        loading="lazy"
+                                                                    />
+                                                                    
+                                                                    {isLoading && (
+                                                                        <div className="absolute inset-0 flex items-center justify-center">
+                                                                            <div className="w-8 h-8 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+                                                                        </div>
+                                                                    )}
+                                                                    
+                                                                    {/* Image overlay on hover */}
+                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                                                        <span className="text-white font-semibold text-sm bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm">
+                                                                            Click to preview
+                                                                        </span>
                                                                     </div>
                                                                 </div>
+                                                            ) : (
+                                                                <div 
+                                                                    className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900 cursor-pointer"
+                                                                    onClick={() => handleAddProduct()}
+                                                                >
+                                                                    <div className="image-placeholder text-center">
+                                                                        <svg className="w-16 h-16 text-gray-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                                        </svg>
+                                                                        <span className="text-gray-400 text-sm">No image</span>
+                                                                        <span className="text-gray-500 text-xs mt-1">Click to add image</span>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            
+                                                            {/* Stock Badge with Animation */}
+                                                            <div className="absolute top-4 right-4 z-20">
+                                                                <div className="relative">
+                                                                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full blur opacity-50 animate-pulse"></div>
+                                                                    <span className="relative bg-gray-900/90 backdrop-blur-sm text-emerald-300 text-xs font-bold px-3 py-1.5 rounded-full border border-emerald-500/30">
+                                                                        {product.qty} in stock
+                                                                    </span>
+                                                                </div>
                                                             </div>
-                                                        )}
-                                                        
-                                                        {/* Stock Badge with Animation */}
-                                                        <div className="absolute top-4 right-4 z-20">
-                                                            <div className="relative">
-                                                                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full blur opacity-50 animate-pulse"></div>
-                                                                <span className="relative bg-gray-900/90 backdrop-blur-sm text-emerald-300 text-xs font-bold px-3 py-1.5 rounded-full border border-emerald-500/30">
-                                                                    {product.qty} in stock
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        {/* ID Badge */}
-                                                        <div className="absolute top-4 left-4 z-20">
-                                                            <span className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-full">
-                                                                ID: #{product.id}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Product Info */}
-                                                    <div className="p-5">
-                                                        <div className="flex justify-between items-start mb-3">
-                                                            <h3 className="text-lg font-bold text-white truncate group-hover:text-purple-200 transition-colors duration-300">
-                                                                {product.name}
-                                                            </h3>
-                                                        </div>
-                                                        
-                                                        <p className="text-gray-400 text-sm mb-4 line-clamp-2 h-10 group-hover:text-gray-300 transition-colors duration-300">
-                                                            {product.description}
-                                                        </p>
-
-                                                        <div className="space-y-3 mb-6">
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="text-sm text-gray-500">Price</span>
-                                                                <span className="text-xl font-bold text-white animate-pulse">
-                                                                    {formatPrice(product.price)}
+                                                            
+                                                            {/* ID Badge */}
+                                                            <div className="absolute top-4 left-4 z-20">
+                                                                <span className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                                                                    ID: #{product.id}
                                                                 </span>
                                                             </div>
                                                             
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="text-sm text-gray-500">Total Value</span>
-                                                                <span className="text-lg font-semibold text-purple-300">
-                                                                    {formatPrice(product.price * product.qty)}
-                                                                </span>
-                                                            </div>
-
-                                                            <div className="flex items-center text-sm text-gray-500 pt-2 border-t border-gray-700/50">
-                                                                <svg className="w-4 h-4 mr-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                                </svg>
-                                                                Added on {formatDate(product.createdAt)}
-                                                            </div>
+                                                            {/* Image Indicator */}
+                                                            {hasImage && !isLoading && (
+                                                                <div className="absolute bottom-4 left-4 z-20">
+                                                                    <span className="bg-gradient-to-r from-gray-900/90 to-gray-800/90 backdrop-blur-sm text-gray-300 text-xs font-bold px-3 py-1 rounded-full border border-gray-600/30">
+                                                                        <svg className="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                                            <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                                                                        </svg>
+                                                                        Image
+                                                                    </span>
+                                                                </div>
+                                                            )}
                                                         </div>
 
-                                                        {/* Action Buttons with Hover Effects */}
-                                                        <div className="flex space-x-2">
-                                                            <button
-                                                                data-edit-id={product.id}
-                                                                onClick={() => handleEdit(product)}
-                                                                className="relative overflow-hidden flex-1 bg-gradient-to-r from-indigo-600/20 to-purple-600/20 hover:from-indigo-600 hover:to-purple-600 text-indigo-300 hover:text-white font-medium py-2.5 px-4 rounded-xl flex items-center justify-center transition-all duration-300 transform hover:scale-105 group/edit"
-                                                            >
-                                                                <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover/edit:opacity-100 transition-opacity duration-300"></div>
-                                                                <svg className="w-4 h-4 mr-2 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                                </svg>
-                                                                <span className="relative z-10">Edit</span>
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDelete(product)}
-                                                                className="relative overflow-hidden flex-1 bg-gradient-to-r from-red-600/20 to-orange-600/20 hover:from-red-600 hover:to-orange-600 text-red-300 hover:text-white font-medium py-2.5 px-4 rounded-xl flex items-center justify-center transition-all duration-300 transform hover:scale-105 group/delete"
-                                                            >
-                                                                <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-orange-600 opacity-0 group-hover/delete:opacity-100 transition-opacity duration-300"></div>
-                                                                <svg className="w-4 h-4 mr-2 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                                </svg>
-                                                                <span className="relative z-10">Delete</span>
-                                                            </button>
+                                                        {/* Product Info */}
+                                                        <div className="p-5">
+                                                            <div className="flex justify-between items-start mb-3">
+                                                                <h3 className="text-lg font-bold text-white truncate group-hover:text-purple-200 transition-colors duration-300">
+                                                                    {product.name}
+                                                                </h3>
+                                                            </div>
+                                                            
+                                                            <p className="text-gray-400 text-sm mb-4 line-clamp-2 h-10 group-hover:text-gray-300 transition-colors duration-300">
+                                                                {product.description}
+                                                            </p>
+
+                                                            <div className="space-y-3 mb-6">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-sm text-gray-500">Price</span>
+                                                                    <span className="text-xl font-bold text-white animate-pulse">
+                                                                        {formatPrice(product.price)}
+                                                                    </span>
+                                                                </div>
+                                                                
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-sm text-gray-500">Total Value</span>
+                                                                    <span className="text-lg font-semibold text-purple-300">
+                                                                        {formatPrice(product.price * product.qty)}
+                                                                    </span>
+                                                                </div>
+
+                                                                <div className="flex items-center text-sm text-gray-500 pt-2 border-t border-gray-700/50">
+                                                                    <svg className="w-4 h-4 mr-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                                    </svg>
+                                                                    Added on {formatDate(product.createdAt)}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Action Buttons with Hover Effects */}
+                                                            <div className="flex space-x-2">
+                                                                <button
+                                                                    data-edit-id={product.id}
+                                                                    onClick={() => handleEdit(product)}
+                                                                    className="relative overflow-hidden flex-1 bg-gradient-to-r from-indigo-600/20 to-purple-600/20 hover:from-indigo-600 hover:to-purple-600 text-indigo-300 hover:text-white font-medium py-2.5 px-4 rounded-xl flex items-center justify-center transition-all duration-300 transform hover:scale-105 group/edit"
+                                                                >
+                                                                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover/edit:opacity-100 transition-opacity duration-300"></div>
+                                                                    <svg className="w-4 h-4 mr-2 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                                    </svg>
+                                                                    <span className="relative z-10">Edit</span>
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDelete(product)}
+                                                                    className="relative overflow-hidden flex-1 bg-gradient-to-r from-red-600/20 to-orange-600/20 hover:from-red-600 hover:to-orange-600 text-red-300 hover:text-white font-medium py-2.5 px-4 rounded-xl flex items-center justify-center transition-all duration-300 transform hover:scale-105 group/delete"
+                                                                >
+                                                                    <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-orange-600 opacity-0 group-hover/delete:opacity-100 transition-opacity duration-300"></div>
+                                                                    <svg className="w-4 h-4 mr-2 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                    </svg>
+                                                                    <span className="relative z-10">Delete</span>
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </>
                             )}
@@ -966,6 +1193,9 @@ const Products = () => {
                             <span className="animate-pulse">✨</span>
                         </div>
                         <p className="mt-2">Showing {products.length} products • Last updated: Just now</p>
+                        <p className="text-xs text-gray-600 mt-1">
+                            Images served from: {API_BASE_URL}/uploads/
+                        </p>
                     </div>
                 </div>
             </div>

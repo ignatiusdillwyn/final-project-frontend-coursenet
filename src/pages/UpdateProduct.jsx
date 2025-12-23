@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { updateProduct, fetchAllProduct } from '../services/productAPI';
+import { updateProduct, fetchAllProduct, updateProductImage } from '../services/productAPI';
 import Swal from 'sweetalert2';
 
 const UpdateProduct = () => {
@@ -8,6 +8,7 @@ const UpdateProduct = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const productData = location.state?.product;
+    const fileInputRef = useRef(null);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -16,9 +17,13 @@ const UpdateProduct = () => {
         image: '',
         description: ''
     });
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [previewImage, setPreviewImage] = useState('');
     const [loading, setLoading] = useState(false);
     const [isLoadingProduct, setIsLoadingProduct] = useState(!productData);
     const [error, setError] = useState('');
+    const [imageUploading, setImageUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
 
     // Fetch product data if not passed via state
     useEffect(() => {
@@ -43,6 +48,11 @@ const UpdateProduct = () => {
                             image: product.image || '',
                             description: product.description || ''
                         });
+                        
+                        // Set preview image if exists
+                        if (product.image) {
+                            setPreviewImage(product.image);
+                        }
                     } else {
                         Swal.fire({
                             icon: 'error',
@@ -72,6 +82,12 @@ const UpdateProduct = () => {
                     image: productData.image || '',
                     description: productData.description || ''
                 });
+                
+                // Set preview image if exists
+                if (productData.image) {
+                    setPreviewImage(productData.image);
+                }
+                
                 setIsLoadingProduct(false);
             }
         };
@@ -85,6 +101,171 @@ const UpdateProduct = () => {
             ...prev,
             [name]: value
         }));
+    };
+
+    // Handle image selection
+    const handleImageSelect = (e) => {
+        const file = e.target.files[0];
+        
+        if (!file) return;
+
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid File Type',
+                text: 'Please select a valid image file (JPEG, JPG, PNG, WebP)',
+                confirmButtonColor: '#4f46e5',
+            });
+            return;
+        }
+
+        // Validate file size (5MB max)
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.size > maxSize) {
+            Swal.fire({
+                icon: 'error',
+                title: 'File Too Large',
+                text: 'Image size should not exceed 5MB',
+                confirmButtonColor: '#4f46e5',
+            });
+            return;
+        }
+
+        setSelectedImage(file);
+        
+        // Create preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setPreviewImage(reader.result);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // Handle image upload
+    const handleImageUpload = async () => {
+        if (!selectedImage) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'No Image Selected',
+                text: 'Please select an image first',
+                confirmButtonColor: '#4f46e5',
+            });
+            return;
+        }
+
+        const result = await Swal.fire({
+            title: 'Upload Image?',
+            html: `
+                <div class="text-left">
+                    <p class="mb-2">Upload new image for this product?</p>
+                    <div class="bg-gray-50 p-3 rounded-lg mt-3">
+                        <p class="text-sm font-medium text-gray-700">File: <span class="font-bold">${selectedImage.name}</span></p>
+                        <p class="text-sm font-medium text-gray-700 mt-1">Size: <span class="font-bold">${(selectedImage.size / 1024).toFixed(2)} KB</span></p>
+                    </div>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#4f46e5',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, Upload Image',
+            cancelButtonText: 'Cancel',
+            reverseButtons: true,
+            showLoaderOnConfirm: true,
+            preConfirm: async () => {
+                try {
+                    setImageUploading(true);
+                    setUploadProgress(0);
+                    
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        navigate('/login');
+                        return false;
+                    }
+
+                    // Simulate progress
+                    const progressInterval = setInterval(() => {
+                        setUploadProgress(prev => {
+                            if (prev >= 90) {
+                                clearInterval(progressInterval);
+                                return 90;
+                            }
+                            return prev + 10;
+                        });
+                    }, 200);
+
+                    // Upload image
+                    const response = await updateProductImage(id, selectedImage, token);
+                    
+                    clearInterval(progressInterval);
+                    setUploadProgress(100);
+                    
+                    // Update form data with new image URL
+                    if (response.data?.image) {
+                        setFormData(prev => ({
+                            ...prev,
+                            image: response.data.image
+                        }));
+                        setPreviewImage(response.data.image);
+                    }
+                    
+                    // Clear selected image
+                    setSelectedImage(null);
+                    
+                    return true;
+                } catch (err) {
+                    Swal.showValidationMessage(
+                        `Upload Failed: ${err.response?.data?.message || 'Please try again'}`
+                    );
+                    return false;
+                } finally {
+                    setImageUploading(false);
+                    setUploadProgress(0);
+                }
+            },
+            allowOutsideClick: () => !Swal.isLoading()
+        });
+
+        if (result.isConfirmed) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'Image uploaded successfully!',
+                confirmButtonColor: '#4f46e5',
+                timer: 1500,
+                timerProgressBar: true,
+                showConfirmButton: false
+            });
+        }
+    };
+
+    // Remove selected image
+    const handleRemoveImage = () => {
+        Swal.fire({
+            title: 'Remove Image?',
+            text: 'Are you sure you want to remove this image?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#4f46e5',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, Remove',
+            cancelButtonText: 'Cancel',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setSelectedImage(null);
+                setPreviewImage('');
+                setFormData(prev => ({
+                    ...prev,
+                    image: ''
+                }));
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
+            }
+        });
     };
 
     const validateForm = () => {
@@ -264,6 +445,19 @@ const UpdateProduct = () => {
                     image: productData.image || '',
                     description: productData.description || ''
                 });
+                
+                // Reset image preview
+                if (productData.image) {
+                    setPreviewImage(productData.image);
+                } else {
+                    setPreviewImage('');
+                }
+                
+                setSelectedImage(null);
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
+                
                 Swal.fire({
                     icon: 'success',
                     title: 'Changes Reset',
@@ -274,6 +468,29 @@ const UpdateProduct = () => {
                 });
             }
         });
+    };
+
+    // Drag and drop handlers
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            const file = files[0];
+            // Create a fake event object for handleImageSelect
+            const fakeEvent = {
+                target: {
+                    files: [file]
+                }
+            };
+            handleImageSelect(fakeEvent);
+        }
     };
 
     if (isLoadingProduct) {
@@ -364,6 +581,140 @@ const UpdateProduct = () => {
                                 </div>
                             </div>
 
+                            {/* Image Upload Section */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-3">
+                                    Product Image
+                                    <span className="text-gray-400 ml-1">(Optional)</span>
+                                </label>
+                                
+                                <div className="space-y-4">
+                                    {/* Image Preview */}
+                                    {previewImage && (
+                                        <div className="relative">
+                                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                                                <p className="text-sm font-medium text-gray-700 mb-3">Current Image:</p>
+                                                <div className="flex items-start space-x-4">
+                                                    <div className="relative">
+                                                        <img
+                                                            src={previewImage}
+                                                            alt="Product preview"
+                                                            className="w-32 h-32 object-cover rounded-lg border border-gray-300"
+                                                        />
+                                                        {selectedImage && (
+                                                            <div className="absolute -top-2 -right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                                                NEW
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="text-sm text-gray-600">
+                                                            {selectedImage ? 'New image selected' : 'Current product image'}
+                                                        </p>
+                                                        {selectedImage && (
+                                                            <p className="text-xs text-gray-500 mt-1">
+                                                                File: {selectedImage.name} ({Math.round(selectedImage.size / 1024)} KB)
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Upload Progress */}
+                                    {imageUploading && (
+                                        <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-sm font-medium text-blue-700">Uploading...</span>
+                                                <span className="text-sm font-bold text-blue-700">{uploadProgress}%</span>
+                                            </div>
+                                            <div className="w-full bg-blue-200 rounded-full h-2.5">
+                                                <div
+                                                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                                                    style={{ width: `${uploadProgress}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Upload Area */}
+                                    <div
+                                        onDragOver={handleDragOver}
+                                        onDrop={handleDrop}
+                                        className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer ${
+                                            selectedImage 
+                                                ? 'border-yellow-400 bg-yellow-50' 
+                                                : 'border-gray-300 hover:border-indigo-400 hover:bg-gray-50'
+                                        }`}
+                                        onClick={() => fileInputRef.current?.click()}
+                                    >
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/jpeg, image/jpg, image/png, image/webp"
+                                            onChange={handleImageSelect}
+                                            className="hidden"
+                                            disabled={imageUploading || loading}
+                                        />
+                                        
+                                        <div className="space-y-3">
+                                            <div className="text-4xl text-gray-400">
+                                                {selectedImage ? '📁' : '📤'}
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-700 font-medium">
+                                                    {selectedImage ? 'Image selected' : 'Click to upload or drag & drop'}
+                                                </p>
+                                                <p className="text-sm text-gray-500 mt-1">
+                                                    PNG, JPG, WebP up to 5MB
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Image Action Buttons */}
+                                    <div className="flex flex-wrap gap-3">
+                                        {selectedImage && (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleImageUpload}
+                                                    disabled={imageUploading || loading}
+                                                    className={`px-4 py-2 rounded-lg font-medium text-sm ${
+                                                        imageUploading
+                                                            ? 'bg-green-400 cursor-not-allowed text-white'
+                                                            : 'bg-green-600 hover:bg-green-700 text-white'
+                                                    }`}
+                                                >
+                                                    {imageUploading ? 'Uploading...' : 'Upload Image'}
+                                                </button>
+                                                
+                                                <button
+                                                    type="button"
+                                                    onClick={handleRemoveImage}
+                                                    disabled={imageUploading || loading}
+                                                    className="px-4 py-2 border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 rounded-lg font-medium text-sm"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </>
+                                        )}
+                                        
+                                        {previewImage && !selectedImage && (
+                                            <button
+                                                type="button"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={imageUploading || loading}
+                                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-sm"
+                                            >
+                                                Change Image
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* Quantity and Price - Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Quantity */}
@@ -424,32 +775,6 @@ const UpdateProduct = () => {
                                 </div>
                             </div>
 
-                            {/* Image URL (Optional) */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">
-                                    Image URL <span className="text-gray-400">(Optional)</span>
-                                </label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                    </div>
-                                    <input
-                                        type="url"
-                                        name="image"
-                                        value={formData.image}
-                                        onChange={handleChange}
-                                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
-                                        placeholder="https://example.com/image.jpg"
-                                        disabled={loading}
-                                    />
-                                </div>
-                                <p className="text-sm text-gray-500 mt-2">
-                                    Leave empty if you don't have an image URL
-                                </p>
-                            </div>
-
                             {/* Description */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -497,6 +822,12 @@ const UpdateProduct = () => {
                                                     {productData?.price ? `Rp ${productData.price.toLocaleString('id-ID')}` : 'Rp 0'}
                                                 </span>
                                             </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-yellow-600">Image:</span>
+                                                <span className="font-medium">
+                                                    {productData?.image ? '✅' : '❌'}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                     <div>
@@ -516,6 +847,12 @@ const UpdateProduct = () => {
                                                     {formData.price ? `Rp ${parseInt(formData.price).toLocaleString('id-ID')}` : 'Rp 0'}
                                                 </span>
                                             </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-green-600">Image:</span>
+                                                <span className="font-medium">
+                                                    {previewImage || selectedImage ? '✅' : '❌'}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -527,7 +864,7 @@ const UpdateProduct = () => {
                                     <button
                                         type="button"
                                         onClick={handleCancel}
-                                        disabled={loading}
+                                        disabled={loading || imageUploading}
                                         className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition duration-200 font-medium"
                                     >
                                         Cancel
@@ -535,7 +872,7 @@ const UpdateProduct = () => {
                                     <button
                                         type="button"
                                         onClick={handleReset}
-                                        disabled={loading || !productData}
+                                        disabled={loading || imageUploading || !productData}
                                         className="px-6 py-3 border border-yellow-300 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition duration-200 font-medium"
                                     >
                                         Reset Changes
@@ -543,8 +880,8 @@ const UpdateProduct = () => {
                                 </div>
                                 <button
                                     type="submit"
-                                    disabled={loading}
-                                    className={`px-6 py-3 rounded-lg font-medium text-white transition duration-200 flex items-center ${loading
+                                    disabled={loading || imageUploading}
+                                    className={`px-6 py-3 rounded-lg font-medium text-white transition duration-200 flex items-center ${loading || imageUploading
                                         ? 'bg-indigo-400 cursor-not-allowed'
                                         : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
                                         }`}
@@ -588,6 +925,7 @@ const UpdateProduct = () => {
                                     <li>Keep descriptions accurate and up-to-date</li>
                                     <li>Use high-quality images to showcase your products</li>
                                     <li>Consider seasonal changes when updating product details</li>
+                                    <li>For best results, use images with minimum 800x600 resolution</li>
                                 </ul>
                             </div>
                         </div>

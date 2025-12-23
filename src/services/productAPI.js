@@ -52,4 +52,27 @@ const searchProduct = async (name) => {
     return response.data;
 };
 
-export { addProduct, fetchAllProduct, updateProduct, deleteProduct, searchProduct };
+const updateProductImage = async (id, imageFile, token) => {
+    try {
+        const formData = new FormData();
+        formData.append('image', imageFile); // Field name harus 'image'
+
+        const response = await axios.put(
+            `${URL}/updateProductImage/${id}`,
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'access_token': token
+                }
+            }
+        );
+
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+
+export { addProduct, fetchAllProduct, updateProduct, deleteProduct, searchProduct, updateProductImage };
