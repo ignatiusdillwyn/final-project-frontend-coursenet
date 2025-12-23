@@ -1,10 +1,12 @@
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import Swal from 'sweetalert2';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeLink, setActiveLink] = useState("");
+  const navigate = useNavigate();
 
   const activeClass = "text-white font-semibold";
   const baseClass = "hover:text-blue-300 transition-all duration-300 hover:scale-105";
@@ -22,6 +24,108 @@ const Navbar = () => {
   const handleLinkClick = (path) => {
     setActiveLink(path);
     setIsMobileMenuOpen(false);
+  };
+
+  // Handle Logout function
+  const handleLogout = async () => {
+    setIsMobileMenuOpen(false);
+    
+    const result = await Swal.fire({
+      title: 'Logout?',
+      html: `
+        <div class="text-center">
+          <div class="relative mx-auto w-32 h-32 mb-4">
+            <div class="absolute inset-0 bg-gradient-to-r from-red-500 to-orange-500 rounded-full blur-2xl opacity-50 animate-pulse"></div>
+            <div class="relative w-full h-full flex items-center justify-center">
+              <svg class="w-24 h-24 text-red-500 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+              </svg>
+            </div>
+          </div>
+          <p class="text-lg font-semibold text-gray-800">Are you sure you want to logout?</p>
+          <p class="text-gray-600 mt-2">You will be redirected to the login page.</p>
+          <div class="mt-4 p-3 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg border border-red-200">
+            <p class="text-sm text-gray-700">
+              <span class="font-medium">Session:</span> Active<br>
+              <span class="font-medium">Status:</span> Logged in
+            </p>
+          </div>
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: '<span class="flex items-center justify-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg> Yes, Logout</span>',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      showLoaderOnConfirm: true,
+      preConfirm: async () => {
+        try {
+          console.log('pre confirm')
+          // Simulate API call
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          
+          // Clear token from localStorage
+          localStorage.removeItem('token');
+          localStorage.removeItem('userData');
+          
+          // Clear any other stored data
+          localStorage.removeItem('cart');
+          localStorage.removeItem('recentProducts');
+          localStorage.removeItem('userPreferences');
+          
+          return true;
+        } catch (err) {
+          Swal.showValidationMessage(`Logout Failed: ${err.message || 'Please try again'}`);
+          return false;
+        }
+      },
+      allowOutsideClick: () => !Swal.isLoading()
+    });
+
+    if (result.isConfirmed) {
+      // Animation before redirect
+      Swal.fire({
+        title: 'Logging Out...',
+        html: `
+          <div class="text-center">
+            <div class="relative mx-auto w-32 h-32 mb-4">
+              <div class="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full blur-2xl opacity-30"></div>
+              <div class="relative w-full h-full flex items-center justify-center">
+                <svg class="w-24 h-24 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+        `,
+        timer: 1500,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        didClose: () => {
+          // Navigate to login page
+          navigate('/login');
+          
+          // Show final success message
+          Swal.fire({
+            title: 'Logged Out!',
+            html: `
+              <div class="text-center animate-bounce">
+                <svg class="w-16 h-16 mx-auto text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+              <p class="mt-4 text-lg font-semibold text-gray-800">You have been logged out successfully!</p>
+              <p class="text-gray-600 mt-2">Redirecting to login page...</p>
+            `,
+            timer: 2000,
+            timerProgressBar: true,
+            showConfirmButton: false
+          });
+        }
+      });
+    }
   };
 
   return (
@@ -150,14 +254,26 @@ const Navbar = () => {
                 <div className="absolute right-0 mt-2 w-48 bg-white/95 backdrop-blur-lg rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 border border-white/20">
                   <div className="py-2">
                     <Link to="/profile" className="block px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 rounded-lg mx-2 hover:scale-105">
-                      👤 My Profile
+                      <span className="flex items-center">
+                        <span className="mr-2">👤</span>
+                        My Profile
+                      </span>
                     </Link>
                     <Link to="/settings" className="block px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 rounded-lg mx-2 hover:scale-105">
-                      ⚙️ Settings
+                      <span className="flex items-center">
+                        <span className="mr-2">⚙️</span>
+                        Settings
+                      </span>
                     </Link>
-                    <Link to="/logout" className="block px-4 py-2.5 text-gray-700 hover:bg-red-50 hover:text-red-600 transition-all duration-200 rounded-lg mx-2 hover:scale-105">
-                      🚪 Logout
-                    </Link>
+                    <button 
+                      onClick={handleLogout}
+                      className="w-full text-left block px-4 py-2.5 text-gray-700 hover:bg-red-50 hover:text-red-600 transition-all duration-200 rounded-lg mx-2 hover:scale-105"
+                    >
+                      <span className="flex items-center">
+                        <span className="mr-2">🚪</span>
+                        Logout
+                      </span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -261,6 +377,15 @@ const Navbar = () => {
                     <p className="text-sm text-gray-500">TokoPakEdi Member</p>
                   </div>
                 </div>
+                
+                {/* Mobile Logout Button */}
+                <button 
+                  onClick={handleLogout}
+                  className="w-full mt-3 px-4 py-3 rounded-xl bg-gradient-to-r from-red-50 to-orange-50 text-red-600 hover:from-red-100 hover:to-orange-100 transition-all duration-300 transform hover:scale-105 flex items-center space-x-3 border border-red-200"
+                >
+                  <span className="text-lg">🚪</span>
+                  <span className="font-medium">Logout</span>
+                </button>
               </div>
             </div>
           </div>
