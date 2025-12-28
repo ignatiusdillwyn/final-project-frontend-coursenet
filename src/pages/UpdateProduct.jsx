@@ -44,7 +44,7 @@ const UpdateProduct = () => {
         if (!imagePath) return null;
         if (imagePath.startsWith('http')) return imagePath;
         if (imagePath.startsWith('data:')) return imagePath;
-        
+
         const cleanPath = imagePath.startsWith('uploads/') ? imagePath : `uploads/${imagePath}`;
         return `${API_BASE_URL}/${cleanPath}`;
     };
@@ -88,7 +88,7 @@ const UpdateProduct = () => {
             const animate = () => {
                 const elapsed = Date.now() - startTime;
                 const progress = elapsed / duration;
-                
+
                 if (progress > 1) {
                     particle.remove();
                     return;
@@ -105,7 +105,7 @@ const UpdateProduct = () => {
         };
 
         const particleInterval = setInterval(createParticle, 300);
-        
+
         for (let i = 0; i < 20; i++) {
             setTimeout(createParticle, i * 100);
         }
@@ -139,7 +139,7 @@ const UpdateProduct = () => {
                             image: product.image || '',
                             description: product.description || ''
                         });
-                        
+
                         // Set preview image
                         if (product.image) {
                             const imageUrl = getImageUrl(product.image);
@@ -174,13 +174,13 @@ const UpdateProduct = () => {
                     image: productData.image || '',
                     description: productData.description || ''
                 });
-                
+
                 // Set preview image
                 if (productData.image) {
                     const imageUrl = getImageUrl(productData.image);
                     setPreviewImage(imageUrl);
                 }
-                
+
                 setIsLoadingProduct(false);
             }
         };
@@ -199,7 +199,7 @@ const UpdateProduct = () => {
     // Handle image selection
     const handleImageSelect = (e) => {
         const file = e.target.files[0];
-        
+
         if (!file) return;
 
         // Validate file type
@@ -227,7 +227,7 @@ const UpdateProduct = () => {
         }
 
         setSelectedImage(file);
-        
+
         // Create preview
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -271,7 +271,7 @@ const UpdateProduct = () => {
                 try {
                     setImageUploading(true);
                     setUploadProgress(0);
-                    
+
                     const token = localStorage.getItem('token');
                     if (!token) {
                         navigate('/login');
@@ -291,10 +291,10 @@ const UpdateProduct = () => {
 
                     // Upload image
                     const response = await updateProductImage(id, selectedImage, token);
-                    
+
                     clearInterval(progressInterval);
                     setUploadProgress(100);
-                    
+
                     // Update form data with new image URL
                     if (response.data?.image) {
                         const imageUrl = getImageUrl(response.data.image);
@@ -304,10 +304,10 @@ const UpdateProduct = () => {
                         }));
                         setPreviewImage(imageUrl);
                     }
-                    
+
                     // Clear selected image
                     setSelectedImage(null);
-                    
+
                     return true;
                 } catch (err) {
                     Swal.showValidationMessage(
@@ -566,19 +566,19 @@ const UpdateProduct = () => {
                     image: productData.image || '',
                     description: productData.description || ''
                 });
-                
+
                 if (productData.image) {
                     const imageUrl = getImageUrl(productData.image);
                     setPreviewImage(imageUrl);
                 } else {
                     setPreviewImage('');
                 }
-                
+
                 setSelectedImage(null);
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }
-                
+
                 Swal.fire({
                     icon: 'success',
                     title: 'Changes Reset',
@@ -600,7 +600,7 @@ const UpdateProduct = () => {
     const handleDrop = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        
+
         const files = e.dataTransfer.files;
         if (files.length > 0) {
             const file = files[0];
@@ -634,7 +634,7 @@ const UpdateProduct = () => {
                 <div className="mt-4 text-gray-400 text-sm">
                     <div className="flex space-x-1">
                         {[...Array(3)].map((_, i) => (
-                            <div key={i} className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay: `${i * 0.1}s`}}></div>
+                            <div key={i} className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.1}s` }}></div>
                         ))}
                     </div>
                 </div>
@@ -757,11 +757,11 @@ const UpdateProduct = () => {
                 </div>
 
                 {/* Main Content */}
-                <div className="relative z-10 pt-8">
+                <div className="relative z-10 pt-8 mt-20">
                     <div className="px-4 md:px-6 lg:px-8">
                         <div className="max-w-4xl mx-auto">
                             {/* Header Section */}
-                            <div className="mb-8 animate-slide-in" style={{animationDelay: '0.1s'}}>
+                            <div className="mb-8 animate-slide-in" style={{ animationDelay: '0.1s' }}>
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <button
@@ -815,7 +815,7 @@ const UpdateProduct = () => {
                             )}
 
                             {/* Form Card */}
-                            <div className="relative group animate-slide-in" style={{animationDelay: '0.2s'}}>
+                            <div className="relative group animate-slide-in" style={{ animationDelay: '0.2s' }}>
                                 <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/20 via-purple-600/20 to-pink-600/20 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition duration-1000"></div>
                                 <div className="relative bg-gray-800/30 backdrop-blur-xl rounded-3xl p-8 border border-gray-700/50 group-hover:border-purple-500/30 transition-all duration-500">
                                     <form onSubmit={handleSubmit} className="space-y-8">
@@ -851,7 +851,7 @@ const UpdateProduct = () => {
                                                 Product Image
                                                 <span className="text-gray-400 ml-1">(Optional)</span>
                                             </label>
-                                            
+
                                             <div className="space-y-4">
                                                 {/* Image Preview */}
                                                 {previewImage && (
@@ -921,11 +921,10 @@ const UpdateProduct = () => {
                                                 <div
                                                     onDragOver={handleDragOver}
                                                     onDrop={handleDrop}
-                                                    className={`relative overflow-hidden border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${
-                                                        selectedImage 
-                                                            ? 'border-yellow-500 bg-yellow-900/20' 
+                                                    className={`relative overflow-hidden border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${selectedImage
+                                                            ? 'border-yellow-500 bg-yellow-900/20'
                                                             : 'border-gray-700 hover:border-purple-500 bg-gray-900/30 hover:bg-gray-900/50'
-                                                    }`}
+                                                        }`}
                                                     onClick={() => fileInputRef.current?.click()}
                                                 >
                                                     <input
@@ -936,7 +935,7 @@ const UpdateProduct = () => {
                                                         className="hidden"
                                                         disabled={imageUploading || loading}
                                                     />
-                                                    
+
                                                     <div className="space-y-4">
                                                         <div className="text-5xl">
                                                             {selectedImage ? '📁' : '📤'}
@@ -958,7 +957,7 @@ const UpdateProduct = () => {
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    
+
                                                     {/* Decorative elements */}
                                                     <div className="absolute top-0 left-0 w-20 h-20 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
                                                     <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-blue-500/10 to-cyan-500/10 rounded-full translate-x-1/3 translate-y-1/3"></div>
@@ -972,11 +971,10 @@ const UpdateProduct = () => {
                                                                 type="button"
                                                                 onClick={handleImageUpload}
                                                                 disabled={imageUploading || loading}
-                                                                className={`relative overflow-hidden px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 ${
-                                                                    imageUploading
+                                                                className={`relative overflow-hidden px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 ${imageUploading
                                                                         ? 'bg-green-700 cursor-not-allowed text-white'
                                                                         : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg shadow-green-500/25'
-                                                                }`}
+                                                                    }`}
                                                             >
                                                                 <div className="absolute inset-0 animate-shimmer"></div>
                                                                 <div className="relative flex items-center">
@@ -998,7 +996,7 @@ const UpdateProduct = () => {
                                                                     )}
                                                                 </div>
                                                             </button>
-                                                            
+
                                                             <button
                                                                 type="button"
                                                                 onClick={handleRemoveImage}
@@ -1012,7 +1010,7 @@ const UpdateProduct = () => {
                                                             </button>
                                                         </>
                                                     )}
-                                                    
+
                                                     {previewImage && !selectedImage && (
                                                         <button
                                                             type="button"
@@ -1067,11 +1065,6 @@ const UpdateProduct = () => {
                                                 <div className="relative group/input">
                                                     <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-lg blur opacity-0 group-hover/input:opacity-100 transition duration-300"></div>
                                                     <div className="relative">
-                                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                            <svg className="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                            </svg>
-                                                        </div>
                                                         <div className="flex">
                                                             <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-700 bg-gray-800 text-gray-300">
                                                                 Rp
@@ -1120,9 +1113,9 @@ const UpdateProduct = () => {
                                                         <div className="flex items-center space-x-2">
                                                             <div className="text-xs text-gray-500">Message Power:</div>
                                                             <div className="w-24 h-2 bg-gray-800 rounded-full overflow-hidden">
-                                                                <div 
+                                                                <div
                                                                     className="h-full bg-gradient-to-r from-pink-500 to-rose-500 rounded-full transition-all duration-300"
-                                                                    style={{width: `${Math.min(formData.description.length / 10, 100)}%`}}
+                                                                    style={{ width: `${Math.min(formData.description.length / 10, 100)}%` }}
                                                                 ></div>
                                                             </div>
                                                         </div>
@@ -1219,11 +1212,10 @@ const UpdateProduct = () => {
                                             <button
                                                 type="submit"
                                                 disabled={loading || imageUploading}
-                                                className={`relative overflow-hidden px-8 py-3 rounded-xl font-bold text-white transition-all duration-300 transform hover:scale-105 ${
-                                                    loading || imageUploading
+                                                className={`relative overflow-hidden px-8 py-3 rounded-xl font-bold text-white transition-all duration-300 transform hover:scale-105 ${loading || imageUploading
                                                         ? 'bg-indigo-800 cursor-not-allowed'
                                                         : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 shadow-lg shadow-purple-500/25'
-                                                }`}
+                                                    }`}
                                             >
                                                 <div className="absolute inset-0 animate-shimmer"></div>
                                                 <div className="relative flex items-center justify-center">
@@ -1252,7 +1244,7 @@ const UpdateProduct = () => {
                             </div>
 
                             {/* Tips Section */}
-                            <div className="mt-8 bg-gradient-to-r from-blue-900/30 to-cyan-900/30 backdrop-blur-lg rounded-2xl p-6 border border-blue-700/50 animate-slide-in" style={{animationDelay: '0.3s'}}>
+                            <div className="mt-8 bg-gradient-to-r from-blue-900/30 to-cyan-900/30 backdrop-blur-lg rounded-2xl p-6 border border-blue-700/50 animate-slide-in" style={{ animationDelay: '0.3s' }}>
                                 <div className="flex items-start">
                                     <div className="flex-shrink-0">
                                         <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchAllProduct, deleteProduct, searchProduct } from '../services/productAPI';
 import Swal from 'sweetalert2';
@@ -8,18 +8,12 @@ const Products = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedProduct, setSelectedProduct] = useState(null);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [searchLoading, setSearchLoading] = useState(false);
     const [searchTimeout, setSearchTimeout] = useState(null);
     const [hoveredCard, setHoveredCard] = useState(null);
     const [pageLoaded, setPageLoaded] = useState(false);
     const [statsAnimated, setStatsAnimated] = useState([false, false, false]);
-    const [imageLoading, setImageLoading] = useState({});
     const navigate = useNavigate();
-
-    // API base URL (sesuaikan dengan backend Anda)
-    const API_BASE_URL = 'http://localhost:3000'; // Ganti dengan URL backend Anda
 
     // Format harga ke Rupiah
     const formatPrice = (price) => {
@@ -40,45 +34,14 @@ const Products = () => {
         });
     };
 
-    // Get full image URL
-    const getImageUrl = (imagePath) => {
-        if (!imagePath) return null;
-        
-        // Jika sudah full URL, return langsung
-        if (imagePath.startsWith('http')) {
-            return imagePath;
-        }
-        
-        // Jika relative path, tambahkan base URL
-        // Hapus 'uploads/' di depan jika ada
-        const cleanPath = imagePath.startsWith('uploads/') ? imagePath : `uploads/${imagePath}`;
-        return `${API_BASE_URL}/${cleanPath}`;
-    };
-
-    // Handle image load
-    const handleImageLoad = (productId) => {
-        setImageLoading(prev => ({
-            ...prev,
-            [productId]: false
-        }));
-    };
-
-    // Handle image error
-    const handleImageError = (productId) => {
-        setImageLoading(prev => ({
-            ...prev,
-            [productId]: false
-        }));
-    };
-
     // Animate stats numbers
     const animateNumbers = (target, elementId, duration = 2000) => {
         let start = 0;
         const increment = target / (duration / 16);
         const element = document.getElementById(elementId);
-        
+
         if (!element) return;
-        
+
         const timer = setInterval(() => {
             start += increment;
             if (start >= target) {
@@ -114,17 +77,6 @@ const Products = () => {
         return () => clearTimeout(timer);
     }, []);
 
-    // Initialize image loading states
-    useEffect(() => {
-        const initialLoadingStates = {};
-        products.forEach(product => {
-            if (product.image) {
-                initialLoadingStates[product.id] = true;
-            }
-        });
-        setImageLoading(initialLoadingStates);
-    }, [products]);
-
     // Floating particles effect
     useEffect(() => {
         const createParticle = () => {
@@ -156,7 +108,7 @@ const Products = () => {
             const animate = () => {
                 const elapsed = Date.now() - startTime;
                 const progress = elapsed / duration;
-                
+
                 if (progress > 1) {
                     particle.remove();
                     return;
@@ -174,7 +126,7 @@ const Products = () => {
 
         // Create particles periodically
         const particleInterval = setInterval(createParticle, 300);
-        
+
         // Create initial particles
         for (let i = 0; i < 20; i++) {
             setTimeout(createParticle, i * 100);
@@ -200,31 +152,14 @@ const Products = () => {
 
             const response = await fetchAllProduct(token);
             console.log('Fetched products:', response);
-            
+
             if (response && response.data) {
-                // Process products to ensure image URLs are complete
-                const processedProducts = response.data.map(product => ({
-                    ...product,
-                    // Add full image URL
-                    imageUrl: getImageUrl(product.image)
-                }));
-                
-                setProducts(processedProducts);
-                
-                // Initialize loading states for images
-                const loadingStates = {};
-                processedProducts.forEach(product => {
-                    if (product.imageUrl) {
-                        loadingStates[product.id] = true;
-                    }
-                });
-                setImageLoading(loadingStates);
-                
+                setProducts(response.data);
             } else {
                 setProducts([]);
                 setError('No products found');
             }
-            
+
         } catch (err) {
             console.error('Error fetching products:', err);
             setError('Failed to load products. Please try again.');
@@ -253,24 +188,8 @@ const Products = () => {
             const response = await searchProduct(searchQuery, token);
 
             if (response.data && response.data.length > 0) {
-                // Process products to ensure image URLs are complete
-                const processedProducts = response.data.map(product => ({
-                    ...product,
-                    imageUrl: getImageUrl(product.image)
-                }));
-                
-                setProducts(processedProducts);
+                setProducts(response.data);
                 setError('');
-                
-                // Initialize loading states
-                const loadingStates = {};
-                processedProducts.forEach(product => {
-                    if (product.imageUrl) {
-                        loadingStates[product.id] = true;
-                    }
-                });
-                setImageLoading(loadingStates);
-                
             } else {
                 setProducts([]);
                 setError('No products found matching your search');
@@ -337,20 +256,11 @@ const Products = () => {
             html: `
                 <div class="text-center">
                     <div class="mb-4">
-                        ${product.imageUrl ? `
-                            <div class="relative mx-auto w-32 h-32 overflow-hidden rounded-lg border-2 border-red-500/50">
-                                <img src="${product.imageUrl}" alt="${product.name}" class="w-full h-full object-cover">
-                                <div class="absolute inset-0 bg-red-900/50 backdrop-blur-sm flex items-center justify-center">
-                                    <svg class="w-16 h-16 text-red-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                    </svg>
-                                </div>
-                            </div>
-                        ` : `
-                            <svg class="animate-spin-slow mx-auto w-16 h-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="relative mx-auto w-32 h-32 overflow-hidden rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 border-2 border-red-500/50 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-red-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                             </svg>
-                        `}
+                        </div>
                     </div>
                     <p class="text-lg font-semibold text-gray-800">This action cannot be undone!</p>
                     <p class="text-gray-600 mt-2">All data for <span class="font-bold text-red-600">${product.name}</span> will be permanently deleted.</p>
@@ -358,7 +268,8 @@ const Products = () => {
                         <p class="text-sm text-gray-700">
                             <span class="font-medium">Product ID:</span> #${product.id}<br>
                             <span class="font-medium">Price:</span> ${formatPrice(product.price)}<br>
-                            <span class="font-medium">Stock:</span> ${product.qty} units
+                            <span class="font-medium">Stock:</span> ${product.qty} units<br>
+                            <span class="font-medium">Value:</span> ${formatPrice(product.price * product.qty)}
                         </p>
                     </div>
                 </div>
@@ -404,14 +315,15 @@ const Products = () => {
                         </svg>
                     </div>
                     <p class="mt-4 text-lg font-semibold text-gray-800">Product deleted successfully!</p>
-                    ${product.imageUrl ? `<img src="${product.imageUrl}" alt="${product.name}" class="w-24 h-24 object-cover rounded-lg mx-auto mt-4 border border-gray-200">` : ''}
+                    <div class="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
+                        <p class="text-sm text-gray-700">
+                            <span class="font-medium">${product.name}</span> has been removed from your inventory.
+                        </p>
+                    </div>
                 `,
                 timer: 2000,
                 timerProgressBar: true,
-                showConfirmButton: false,
-                willClose: () => {
-                    setSelectedProduct(null);
-                }
+                showConfirmButton: false
             });
         }
     };
@@ -424,7 +336,7 @@ const Products = () => {
             const ripple = document.createElement('span');
             ripple.classList.add('ripple-effect');
             button.appendChild(ripple);
-            
+
             setTimeout(() => {
                 ripple.remove();
                 navigate(`/updateProduct/${product.id}`, { state: { product } });
@@ -458,38 +370,6 @@ const Products = () => {
         setHoveredCard(null);
     };
 
-    // Handle image preview click
-    const handleImagePreview = (product) => {
-        if (!product.imageUrl) return;
-
-        Swal.fire({
-            title: product.name,
-            html: `
-                <div class="text-center">
-                    <img src="${product.imageUrl}" 
-                         alt="${product.name}" 
-                         class="max-w-full h-auto rounded-lg border border-gray-300 mx-auto"
-                         onload="this.parentElement.parentElement.classList.remove('loading')"
-                         onerror="this.onerror=null; this.src='https://via.placeholder.com/400x300?text=Image+Not+Found'">
-                    <div class="mt-4 text-sm text-gray-600">
-                        <p><strong>Price:</strong> ${formatPrice(product.price)}</p>
-                        <p><strong>Stock:</strong> ${product.qty} units</p>
-                        <p><strong>Added:</strong> ${formatDate(product.createdAt)}</p>
-                    </div>
-                </div>
-            `,
-            showCloseButton: true,
-            showConfirmButton: false,
-            width: 'auto',
-            padding: '2rem',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            customClass: {
-                popup: 'rounded-2xl shadow-2xl',
-                title: 'text-white text-xl font-bold mb-4'
-            }
-        });
-    };
-
     if (loading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 flex flex-col items-center justify-center">
@@ -511,7 +391,7 @@ const Products = () => {
                 <div className="mt-4 text-gray-400 text-sm">
                     <div className="flex space-x-1">
                         {[...Array(3)].map((_, i) => (
-                            <div key={i} className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay: `${i * 0.1}s`}}></div>
+                            <div key={i} className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.1}s` }}></div>
                         ))}
                     </div>
                 </div>
@@ -550,11 +430,6 @@ const Products = () => {
                 @keyframes pulse-glow {
                     0%, 100% { opacity: 0.5; }
                     50% { opacity: 1; }
-                }
-                
-                @keyframes imageLoad {
-                    0% { opacity: 0; transform: scale(0.9); }
-                    100% { opacity: 1; transform: scale(1); }
                 }
                 
                 .loading-spinner {
@@ -647,51 +522,22 @@ const Products = () => {
                 }
                 .animate-slide-in { animation: slideIn 0.6s ease-out; }
                 .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
-                .animate-image-load { animation: imageLoad 0.5s ease-out forwards; }
-                
-                .image-container {
-                    position: relative;
-                    width: 100%;
-                    height: 100%;
-                    overflow: hidden;
-                }
-                
-                .image-loading {
-                    background: linear-gradient(90deg, #2d2d2d 25%, #3a3a3a 50%, #2d2d2d 75%);
-                    background-size: 200% 100%;
-                    animation: shimmer 1.5s infinite;
-                }
-                
-                .image-error {
-                    background: linear-gradient(135deg, #4a5568, #2d3748);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                
-                .image-placeholder {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    color: #9ca3af;
-                }
-                
-                .image-clickable {
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                }
-                
-                .image-clickable:hover {
-                    opacity: 0.9;
-                    transform: scale(1.02);
-                }
                 
                 .line-clamp-2 {
                     display: -webkit-box;
                     -webkit-line-clamp: 2;
                     -webkit-box-orient: vertical;
                     overflow: hidden;
+                }
+                
+                .product-icon {
+                    width: 60px;
+                    height: 60px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 12px;
+                    font-size: 28px;
                 }
             `}</style>
 
@@ -717,7 +563,7 @@ const Products = () => {
                 {/* Main Content */}
                 <div className="relative z-10">
                     {/* Header Section */}
-                    <div className="pt-8 px-4 md:px-6 lg:px-8 animate-slide-in" style={{animationDelay: '0.1s'}}>
+                    <div className="pt-8 px-4 md:px-6 lg:px-8 animate-slide-in" style={{ animationDelay: '0.1s' }}>
                         <div className="max-w-7xl mx-auto">
                             <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
                                 <div className="mb-6 md:mb-0">
@@ -730,7 +576,7 @@ const Products = () => {
                                         <span className="text-sm text-gray-400">{products.length} products loaded</span>
                                     </div>
                                 </div>
-                                
+
                                 <button
                                     data-add-product
                                     onClick={handleAddProduct}
@@ -777,10 +623,10 @@ const Products = () => {
                                         delay: "0.4s"
                                     }
                                 ].map((stat, index) => (
-                                    <div 
+                                    <div
                                         key={index}
                                         className="relative group overflow-hidden bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-lg rounded-2xl p-6 border border-gray-700/50 hover:border-purple-500/50 transition-all duration-500 animate-slide-in"
-                                        style={{animationDelay: stat.delay}}
+                                        style={{ animationDelay: stat.delay }}
                                     >
                                         <div className="relative z-10">
                                             <div className="flex items-center justify-between mb-4">
@@ -807,7 +653,7 @@ const Products = () => {
                             </div>
 
                             {/* Search Section */}
-                            <div className="mb-8 animate-slide-in" style={{animationDelay: '0.5s'}}>
+                            <div className="mb-8 animate-slide-in" style={{ animationDelay: '0.5s' }}>
                                 <div className="relative group">
                                     <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
                                     <div className="relative bg-gray-800/30 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
@@ -845,16 +691,15 @@ const Products = () => {
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    
+
                                                     <div className="flex gap-2 w-full sm:w-auto">
                                                         <button
                                                             onClick={handleSearchButtonClick}
                                                             disabled={searchLoading}
-                                                            className={`relative overflow-hidden px-4 py-3 rounded-lg flex items-center justify-center flex-1 sm:flex-none sm:w-[120px] h-[46px] transition-all duration-300 transform hover:scale-105 ${
-                                                                searchLoading 
+                                                            className={`relative overflow-hidden px-4 py-3 rounded-lg flex items-center justify-center flex-1 sm:flex-none sm:w-[120px] h-[46px] transition-all duration-300 transform hover:scale-105 ${searchLoading
                                                                     ? 'bg-purple-700 cursor-not-allowed'
                                                                     : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
-                                                            }`}
+                                                                }`}
                                                         >
                                                             {searchLoading ? (
                                                                 <>
@@ -995,9 +840,28 @@ const Products = () => {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                         {products.map((product, index) => {
-                                            const hasImage = product.imageUrl && product.image;
-                                            const isLoading = imageLoading[product.id];
-                                            const imageUrl = product.imageUrl;
+                                            // Determine icon based on product name or category
+                                            const getProductIcon = (name) => {
+                                                const nameLower = name.toLowerCase();
+                                                if (nameLower.includes('phone') || nameLower.includes('mobile')) return '📱';
+                                                if (nameLower.includes('laptop') || nameLower.includes('computer')) return '💻';
+                                                if (nameLower.includes('shirt') || nameLower.includes('clothes')) return '👕';
+                                                if (nameLower.includes('book')) return '📚';
+                                                if (nameLower.includes('food')) return '🍔';
+                                                if (nameLower.includes('drink')) return '🥤';
+                                                if (nameLower.includes('shoe')) return '👟';
+                                                if (nameLower.includes('watch')) return '⌚';
+                                                return '📦';
+                                            };
+
+                                            const productIcon = getProductIcon(product.name);
+                                            const iconColor = [
+                                                'from-blue-500 to-cyan-500',
+                                                'from-purple-500 to-pink-500',
+                                                'from-emerald-500 to-green-500',
+                                                'from-orange-500 to-red-500',
+                                                'from-indigo-500 to-blue-500'
+                                            ][index % 5];
 
                                             return (
                                                 <div
@@ -1005,11 +869,10 @@ const Products = () => {
                                                     data-product-id={product.id}
                                                     onMouseEnter={() => handleCardMouseEnter(product.id)}
                                                     onMouseLeave={handleCardMouseLeave}
-                                                    className={`relative group overflow-hidden rounded-2xl transition-all duration-500 animate-slide-in ${
-                                                        hoveredCard === product.id 
-                                                            ? 'transform scale-[1.02]' 
+                                                    className={`relative group overflow-hidden rounded-2xl transition-all duration-500 animate-slide-in ${hoveredCard === product.id
+                                                            ? 'transform scale-[1.02]'
                                                             : ''
-                                                    }`}
+                                                        }`}
                                                     style={{
                                                         animationDelay: `${0.1 * index}s`,
                                                         animationFillMode: 'both'
@@ -1017,97 +880,43 @@ const Products = () => {
                                                 >
                                                     {/* Card Glow Effect */}
                                                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
-                                                    
+
                                                     {/* Main Card */}
                                                     <div className="relative bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-lg border border-gray-700/50 group-hover:border-purple-500/50 transition-all duration-300 h-full rounded-2xl overflow-hidden">
-                                                        {/* Product Image with Hover Effect */}
-                                                        <div className="relative h-48 overflow-hidden">
+                                                        {/* Product Icon Header */}
+                                                        <div className="relative h-40 overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800">
                                                             <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-purple-900/20 to-indigo-900/20 z-10"></div>
-                                                            
-                                                            {hasImage ? (
-                                                                <div 
-                                                                    className={`image-container ${isLoading ? 'image-loading' : 'animate-image-load'}`}
-                                                                    onClick={() => handleImagePreview(product)}
-                                                                >
-                                                                    <img
-                                                                        src={imageUrl}
-                                                                        alt={product.name}
-                                                                        className={`w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 image-clickable ${
-                                                                            isLoading ? 'opacity-0' : 'opacity-100'
-                                                                        }`}
-                                                                        onLoad={() => handleImageLoad(product.id)}
-                                                                        onError={() => handleImageError(product.id)}
-                                                                        loading="lazy"
-                                                                    />
-                                                                    
-                                                                    {isLoading && (
-                                                                        <div className="absolute inset-0 flex items-center justify-center">
-                                                                            <div className="w-8 h-8 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
-                                                                        </div>
-                                                                    )}
-                                                                    
-                                                                    {/* Image overlay on hover */}
-                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                                                                        <span className="text-white font-semibold text-sm bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm">
-                                                                            Click to preview
+
+                                                            <div className="relative h-full flex flex-col items-center justify-center p-6">
+                                                                <div className={`product-icon bg-gradient-to-br ${iconColor} mb-4 transform group-hover:scale-110 transition-transform duration-300`}>
+                                                                    <span>{productIcon}</span>
+                                                                </div>
+
+                                                                <h3 className="text-xl font-bold text-white text-center truncate max-w-full group-hover:text-purple-200 transition-colors duration-300">
+                                                                    {product.name}
+                                                                </h3>
+
+                                                                <div className="absolute top-4 right-4 z-20">
+                                                                    <div className="relative">
+                                                                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full blur opacity-50 animate-pulse"></div>
+                                                                        <span className="relative bg-gray-900/90 backdrop-blur-sm text-emerald-300 text-xs font-bold px-3 py-1.5 rounded-full border border-emerald-500/30">
+                                                                            {product.qty} in stock
                                                                         </span>
                                                                     </div>
                                                                 </div>
-                                                            ) : (
-                                                                <div 
-                                                                    className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900 cursor-pointer"
-                                                                    onClick={() => handleAddProduct()}
-                                                                >
-                                                                    <div className="image-placeholder text-center">
-                                                                        <svg className="w-16 h-16 text-gray-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                                        </svg>
-                                                                        <span className="text-gray-400 text-sm">No image</span>
-                                                                        <span className="text-gray-500 text-xs mt-1">Click to add image</span>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                            
-                                                            {/* Stock Badge with Animation */}
-                                                            <div className="absolute top-4 right-4 z-20">
-                                                                <div className="relative">
-                                                                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full blur opacity-50 animate-pulse"></div>
-                                                                    <span className="relative bg-gray-900/90 backdrop-blur-sm text-emerald-300 text-xs font-bold px-3 py-1.5 rounded-full border border-emerald-500/30">
-                                                                        {product.qty} in stock
+
+                                                                <div className="absolute top-4 left-4 z-20">
+                                                                    <span className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                                                                        ID: #{product.id}
                                                                     </span>
                                                                 </div>
                                                             </div>
-                                                            
-                                                            {/* ID Badge */}
-                                                            <div className="absolute top-4 left-4 z-20">
-                                                                <span className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-full">
-                                                                    ID: #{product.id}
-                                                                </span>
-                                                            </div>
-                                                            
-                                                            {/* Image Indicator */}
-                                                            {hasImage && !isLoading && (
-                                                                <div className="absolute bottom-4 left-4 z-20">
-                                                                    <span className="bg-gradient-to-r from-gray-900/90 to-gray-800/90 backdrop-blur-sm text-gray-300 text-xs font-bold px-3 py-1 rounded-full border border-gray-600/30">
-                                                                        <svg className="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                                            <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                                                                        </svg>
-                                                                        Image
-                                                                    </span>
-                                                                </div>
-                                                            )}
                                                         </div>
 
                                                         {/* Product Info */}
                                                         <div className="p-5">
-                                                            <div className="flex justify-between items-start mb-3">
-                                                                <h3 className="text-lg font-bold text-white truncate group-hover:text-purple-200 transition-colors duration-300">
-                                                                    {product.name}
-                                                                </h3>
-                                                            </div>
-                                                            
                                                             <p className="text-gray-400 text-sm mb-4 line-clamp-2 h-10 group-hover:text-gray-300 transition-colors duration-300">
-                                                                {product.description}
+                                                                {product.description || 'No description available'}
                                                             </p>
 
                                                             <div className="space-y-3 mb-6">
@@ -1117,7 +926,7 @@ const Products = () => {
                                                                         {formatPrice(product.price)}
                                                                     </span>
                                                                 </div>
-                                                                
+
                                                                 <div className="flex items-center justify-between">
                                                                     <span className="text-sm text-gray-500">Total Value</span>
                                                                     <span className="text-lg font-semibold text-purple-300">
@@ -1193,9 +1002,6 @@ const Products = () => {
                             <span className="animate-pulse">✨</span>
                         </div>
                         <p className="mt-2">Showing {products.length} products • Last updated: Just now</p>
-                        <p className="text-xs text-gray-600 mt-1">
-                            Images served from: {API_BASE_URL}/uploads/
-                        </p>
                     </div>
                 </div>
             </div>
