@@ -921,8 +921,8 @@ const Products = () => {
 
                                                             <div className="space-y-3 mb-6">
                                                                 <div className="flex items-center justify-between">
-                                                                    <span className="text-sm text-gray-500">Price</span>
-                                                                    <span className="text-xl font-bold text-white animate-pulse">
+                                                                    <span className="text-sm text-gray-500 mr-42">Price</span>
+                                                                    <span className="text-xl font-bold text-white animate-pulse mt-6">
                                                                         {formatPrice(product.price)}
                                                                     </span>
                                                                 </div>
