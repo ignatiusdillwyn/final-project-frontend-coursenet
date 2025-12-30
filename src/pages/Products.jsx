@@ -255,13 +255,6 @@ const Products = () => {
             title: `Delete "${product.name}"?`,
             html: `
                 <div class="text-center">
-                    <div class="mb-4">
-                        <div class="relative mx-auto w-32 h-32 overflow-hidden rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 border-2 border-red-500/50 flex items-center justify-center">
-                            <svg class="w-16 h-16 text-red-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                            </svg>
-                        </div>
-                    </div>
                     <p class="text-lg font-semibold text-gray-800">This action cannot be undone!</p>
                     <p class="text-gray-600 mt-2">All data for <span class="font-bold text-red-600">${product.name}</span> will be permanently deleted.</p>
                     <div class="mt-4 p-3 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg border border-red-200">

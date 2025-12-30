@@ -511,7 +511,7 @@ const AddProduct = () => {
         }
       `}</style>
 
-      <div className={`page-container min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 transition-all duration-1000 ${pageLoaded ? 'opacity-100' : 'opacity-0'}`}>
+      <div className={`page-container mt-20 min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 transition-all duration-1000 ${pageLoaded ? 'opacity-100' : 'opacity-0'}`}>
         {/* Floating Background Elements */}
         {floatingElements.map(el => (
           <div
