@@ -196,7 +196,7 @@ const AuthLayout = ({ children }) => {
       <div className="fixed inset-0 overflow-hidden">
         {/* Main gradient background */}
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 animate-gradient-shift"></div>
-        
+
         {/* Floating Particles */}
         {particles.map(particle => (
           <div
@@ -215,7 +215,7 @@ const AuthLayout = ({ children }) => {
         ))}
 
         {/* Mouse Trailing Effect */}
-        <div 
+        <div
           className="fixed w-[600px] h-[600px] bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-full blur-3xl pointer-events-none transition-all duration-300 ease-out"
           style={{
             left: `calc(50% + ${mousePosition.x}px)`,
@@ -239,49 +239,47 @@ const AuthLayout = ({ children }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-20 items-center">
             {/* Animated Logo - TOKOPAKEDI DENGAN WARNA CERAH */}
-            <Link 
-              to="/" 
+            <Link
+              to="/"
               className="group flex items-center space-x-3 relative"
               onMouseEnter={() => setHoveredLogo(true)}
               onMouseLeave={() => setHoveredLogo(false)}
             >
               {/* Logo Glow Effect */}
               <div className={`absolute -inset-4 bg-gradient-to-r ${getLogoGlowClass()} rounded-full blur-2xl opacity-0 group-hover:opacity-50 transition-opacity duration-500`}></div>
-              
+
               {/* Main Logo Container */}
               <div className="relative">
                 {/* Outer Ring */}
-                <div className={`absolute -inset-2 border-2 border-transparent rounded-full transition-all duration-500 ${
-                  hoveredLogo ? 'border-current animate-pulse' : ''
-                } ${getLogoColorClass()}`}></div>
-                
+                <div className={`absolute -inset-2 border-2 border-transparent rounded-full transition-all duration-500 ${hoveredLogo ? 'border-current animate-pulse' : ''
+                  } ${getLogoColorClass()}`}></div>
+
                 {/* Middle Ring */}
-                <div className={`absolute -inset-1 border border-transparent rounded-full transition-all duration-700 ${
-                  hoveredLogo ? 'border-current animate-spin-slow' : ''
-                } ${getLogoColorClass()}`}></div>
-                
+                <div className={`absolute -inset-1 border border-transparent rounded-full transition-all duration-700 ${hoveredLogo ? 'border-current animate-spin-slow' : ''
+                  } ${getLogoColorClass()}`}></div>
+
                 {/* Logo Icon */}
                 <div className={`relative bg-gradient-to-br ${getLogoGradientClass()} p-3 rounded-2xl shadow-2xl group-hover:scale-110 group-hover:rotate-12 transition-all duration-500`}>
-                  <svg 
-                    className="w-8 h-8 text-white group-hover:scale-125 transition-transform duration-500" 
-                    fill="none" 
-                    stroke="currentColor" 
+                  <svg
+                    className="w-8 h-8 text-white group-hover:scale-125 transition-transform duration-500"
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" 
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                     />
                   </svg>
                 </div>
-                
+
                 {/* Floating Stars */}
                 {hoveredLogo && (
                   <>
                     <div className="absolute -top-2 -right-2 w-4 h-4 bg-current rounded-full animate-ping"></div>
-                    <div className="absolute -bottom-2 -left-2 w-3 h-3 bg-current rounded-full animate-ping" style={{animationDelay: '0.2s'}}></div>
+                    <div className="absolute -bottom-2 -left-2 w-3 h-3 bg-current rounded-full animate-ping" style={{ animationDelay: '0.2s' }}></div>
                   </>
                 )}
               </div>
@@ -291,7 +289,7 @@ const AuthLayout = ({ children }) => {
                 <h1 className="text-3xl font-bold tracking-tight relative">
                   {/* Background shadow for better visibility */}
                   <span className="absolute -inset-1 bg-black/30 blur rounded-lg"></span>
-                  
+
                   {/* Main text with multiple effects */}
                   <span className="relative flex items-center">
                     <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
@@ -300,14 +298,14 @@ const AuthLayout = ({ children }) => {
                     <span className={`ml-1 animate-neon-glow transition-colors duration-1000 ${getLogoColorClass()} font-extrabold text-shadow-glow`}>
                       Edi
                     </span>
-                    <span className="ml-2 text-lg animate-bounce" style={{animationDelay: "0.1s"}}>✨</span>
-                    <span className="ml-1 text-lg animate-bounce" style={{animationDelay: "0.3s"}}>🌟</span>
+                    <span className="ml-2 text-lg animate-bounce" style={{ animationDelay: "0.1s" }}>✨</span>
+                    <span className="ml-1 text-lg animate-bounce" style={{ animationDelay: "0.3s" }}>🌟</span>
                   </span>
-                  
+
                   {/* Animated underline */}
                   <span className={`absolute -bottom-1 left-0 w-0 group-hover:w-full h-0.5 bg-gradient-to-r ${getLogoGradientClass()} transition-all duration-700 rounded-full`}></span>
                 </h1>
-                
+
                 {/* Subtitle */}
                 <p className="text-sm text-gray-300 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                   Secure Authentication Portal
@@ -317,12 +315,11 @@ const AuthLayout = ({ children }) => {
               {/* Animated Dots */}
               <div className="flex space-x-1 ml-2">
                 {[...Array(3)].map((_, i) => (
-                  <div 
+                  <div
                     key={i}
-                    className={`w-1.5 h-1.5 rounded-full bg-gradient-to-br ${getLogoGradientClass()} transition-all duration-300 ${
-                      hoveredLogo ? 'animate-bounce' : ''
-                    }`}
-                    style={{animationDelay: `${i * 0.1}s`}}
+                    className={`w-1.5 h-1.5 rounded-full bg-gradient-to-br ${getLogoGradientClass()} transition-all duration-300 ${hoveredLogo ? 'animate-bounce' : ''
+                      }`}
+                    style={{ animationDelay: `${i * 0.1}s` }}
                   ></div>
                 ))}
               </div>
@@ -330,18 +327,16 @@ const AuthLayout = ({ children }) => {
 
             {/* Navigation Indicator */}
             <div className="hidden md:flex items-center space-x-6">
-              <div className={`px-4 py-2 rounded-full transition-all duration-300 ${
-                isLoginPage 
-                  ? 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30' 
+              <div className={`px-4 py-2 rounded-full transition-all duration-300 ${isLoginPage
+                  ? 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30'
                   : 'hover:bg-white/5'
-              }`}>
-                <span className={`text-sm font-medium ${
-                  isLoginPage ? 'text-blue-300' : 'text-gray-400'
                 }`}>
+                <span className={`text-sm font-medium ${isLoginPage ? 'text-blue-300' : 'text-gray-400'
+                  }`}>
                   {getPageTitle()}
                 </span>
               </div>
-              
+
               {/* Status Indicator */}
               <div className="flex items-center space-x-2">
                 <div className="flex items-center">
@@ -384,7 +379,7 @@ const AuthLayout = ({ children }) => {
                     <span className="ml-3 text-4xl animate-bounce">✨</span>
                   </h2>
                   <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-                    {isLoginPage 
+                    {isLoginPage
                       ? 'Sign in to access your personalized dashboard and continue your journey with us.'
                       : 'Create your account and unlock exclusive features, personalized content, and seamless experience.'}
                   </p>
@@ -399,7 +394,7 @@ const AuthLayout = ({ children }) => {
                   { number: '256-bit', label: 'Encryption', icon: '🔒', color: 'from-purple-500 to-pink-500' },
                   { number: '24/7', label: 'Support', icon: '🛡️', color: 'from-orange-500 to-amber-500' }
                 ].map((stat, index) => (
-                  <div 
+                  <div
                     key={index}
                     className="relative group"
                   >
@@ -424,7 +419,7 @@ const AuthLayout = ({ children }) => {
             <div className="relative">
               {/* Animated Border Glow */}
               <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20 rounded-3xl blur-2xl opacity-0 hover:opacity-100 transition duration-1000"></div>
-              
+
               {/* Main Content Card */}
               <div className="relative bg-gray-900/40 backdrop-blur-xl rounded-3xl border border-gray-800/50 overflow-hidden">
                 {/* Animated Header Bar */}
@@ -432,8 +427,8 @@ const AuthLayout = ({ children }) => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <div className="w-3 h-3 bg-red-400 rounded-full animate-pulse"></div>
-                      <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-                      <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                      <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
                       <span className="text-gray-400 ml-2 text-sm">auth.tokopakedi.com</span>
                     </div>
                     <div className="text-sm text-gray-400">
@@ -451,8 +446,8 @@ const AuthLayout = ({ children }) => {
                 <div className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 border-t border-gray-800/50 p-6">
                   <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                     <div className={`text-sm font-medium ${getLogoColorClass()} flex items-center`}>
-                      <span className="mr-2 animate-pulse">⚡</span> 
-                      Powered by 
+                      <span className="mr-2 animate-pulse">⚡</span>
+                      Powered by
                       <span className="ml-1 font-bold animate-neon-glow">TokoPak</span>
                       <span className={`ml-1 font-bold ${getLogoColorClass()} animate-neon-glow`}>Edi</span>
                     </div>
@@ -462,11 +457,11 @@ const AuthLayout = ({ children }) => {
                         SSL Secured
                       </div>
                       <div className="text-xs text-gray-500">
-                        <span className="inline-block w-2 h-2 bg-blue-400 rounded-full mr-1 animate-pulse" style={{animationDelay: '0.3s'}}></span>
+                        <span className="inline-block w-2 h-2 bg-blue-400 rounded-full mr-1 animate-pulse" style={{ animationDelay: '0.3s' }}></span>
                         GDPR Compliant
                       </div>
                       <div className="text-xs text-gray-500">
-                        <span className="inline-block w-2 h-2 bg-purple-400 rounded-full mr-1 animate-pulse" style={{animationDelay: '0.6s'}}></span>
+                        <span className="inline-block w-2 h-2 bg-purple-400 rounded-full mr-1 animate-pulse" style={{ animationDelay: '0.6s' }}></span>
                         Privacy First
                       </div>
                     </div>
@@ -474,40 +469,11 @@ const AuthLayout = ({ children }) => {
                 </div>
               </div>
             </div>
-
-            {/* Page Switcher Animation */}
-            <div className="mt-8 flex justify-center">
-              <div className="flex items-center space-x-4 bg-gray-900/50 backdrop-blur-lg rounded-full px-4 py-2 border border-gray-800/50">
-                <span className="text-gray-400 text-sm">
-                  {isLoginPage ? "Don't have an account?" : "Already have an account?"}
-                </span>
-                <Link
-                  to={isLoginPage ? "/register" : "/login"}
-                  className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full text-sm font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105"
-                >
-                  {isLoginPage ? "Sign Up →" : "Sign In →"}
-                </Link>
-              </div>
-            </div>
           </div>
         </div>
       </div>
 
-      {/* Floating Call to Action */}
-      <div className="fixed bottom-8 right-8 z-50">
-        <Link
-          to="/"
-          className="group relative"
-        >
-          <div className={`absolute -inset-2 bg-gradient-to-r ${getLogoGradientClass()} rounded-full blur opacity-0 group-hover:opacity-50 transition duration-500`}></div>
-          <div className="relative bg-gradient-to-r from-gray-900 to-gray-800 rounded-full p-4 border border-gray-700/50 group-hover:border-current transition-all duration-300">
-            <div className="flex items-center space-x-2">
-              <span className="text-xl group-hover:rotate-12 transition-transform duration-300">🏠</span>
-              <span className={`text-sm font-medium ${getLogoColorClass()}`}>Go Home</span>
-            </div>
-          </div>
-        </Link>
-      </div>
+
 
       {/* Floating Elements Animation */}
       <div className="fixed bottom-4 left-4 z-40 opacity-50">
@@ -516,7 +482,7 @@ const AuthLayout = ({ children }) => {
             <div
               key={i}
               className="text-2xl animate-float"
-              style={{animationDelay: `${i * 0.5}s`, animationDuration: `${3 + i}s`}}
+              style={{ animationDelay: `${i * 0.5}s`, animationDuration: `${3 + i}s` }}
             >
               {emoji}
             </div>
