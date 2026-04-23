@@ -6,7 +6,6 @@ import AuthLayout from "../layouts/AuthLayout";
 //Pages
 import Home from "../pages/Home";
 import About from "../pages/About";
-import BookDetail from "../pages/BookDetail";
 import Contact from "../pages/Contact";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
@@ -37,10 +36,6 @@ const router = createBrowserRouter([
             {
                 path: "/about",
                 element: <About />
-            },
-            {
-                path: "/books/:id",
-                element: <BookDetail />
             },
             {
                 path: "/contact",
