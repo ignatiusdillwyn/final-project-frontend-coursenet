@@ -138,78 +138,96 @@ const Products = () => {
         };
     }, []);
 
-    // Fetch all products
-    const loadAllProducts = async () => {
-        try {
-            setLoading(true);
-            setError('');
-            const token = localStorage.getItem('token');
+// Fetch all products
+const loadAllProducts = async () => {
+    try {
+        setLoading(true);
+        setError('');
+        const token = localStorage.getItem('token');
 
-            if (!token) {
-                navigate('/login');
-                return;
-            }
-
-            const response = await fetchAllProduct(token);
-            console.log('Fetched products:', response);
-
-            if (response && response.data) {
-                setProducts(response.data);
-            } else {
-                setProducts([]);
-                setError('No products found');
-            }
-
-        } catch (err) {
-            console.error('Error fetching products:', err);
-            setError('Failed to load products. Please try again.');
-            setProducts([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Handle search product
-    const handleSearch = async (searchQuery) => {
-        if (!searchQuery.trim()) {
-            loadAllProducts();
+        if (!token) {
+            navigate('/login');
             return;
         }
 
-        try {
-            setSearchLoading(true);
-            const token = localStorage.getItem('token');
+        const response = await fetchAllProduct(token);
+        console.log('Fetched products response:', response);
 
-            if (!token) {
-                navigate('/login');
-                return;
-            }
+        // FIX: Your backend returns { status, message, products }
+        if (response && response.products) {
+            setProducts(response.products);
+            setError('');
+        } else if (response && response.data) {
+            // Fallback for other structures
+            setProducts(response.data);
+            setError('');
+        } else {
+            setProducts([]);
+            setError('No products found');
+        }
 
-            const response = await searchProduct(searchQuery, token);
+    } catch (err) {
+        console.error('Error fetching products:', err);
+        setError('Failed to load products. Please try again.');
+        setProducts([]);
+    } finally {
+        setLoading(false);
+    }
+};
 
-            if (response.data && response.data.length > 0) {
-                setProducts(response.data);
+    // Handle search product
+// Handle search product
+const handleSearch = async (searchQuery) => {
+    if (!searchQuery.trim()) {
+        loadAllProducts();
+        return;
+    }
+
+    try {
+        setSearchLoading(true);
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+            navigate('/login');
+            return;
+        }
+
+        const response = await searchProduct(searchQuery, token);
+        console.log('Search response:', response);
+        
+        // FIX: Your backend returns { status, products }
+        if (response && response.products) {
+            if (response.products.length > 0) {
+                setProducts(response.products);
                 setError('');
             } else {
                 setProducts([]);
                 setError('No products found matching your search');
             }
-        } catch (err) {
-            console.error('Error searching products:', err);
-            // Fallback to client-side filtering
-            const filtered = products.filter(product =>
-                product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                product.description?.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-            setProducts(filtered);
-
-            if (filtered.length === 0) {
-                setError('No products found matching your search');
-            }
-        } finally {
-            setSearchLoading(false);
+        } else if (response && response.data && response.data.length > 0) {
+            // Fallback for other response structures
+            setProducts(response.data);
+            setError('');
+        } else {
+            setProducts([]);
+            setError('No products found matching your search');
         }
-    };
+    } catch (err) {
+        console.error('Error searching products:', err);
+        // Fallback to client-side filtering
+        const filtered = products.filter(product =>
+            product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            product.description?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        setProducts(filtered);
+
+        if (filtered.length === 0) {
+            setError('No products found matching your search');
+        }
+    } finally {
+        setSearchLoading(false);
+    }
+};
 
     // Debounce search input
     const handleSearchChange = (e) => {
