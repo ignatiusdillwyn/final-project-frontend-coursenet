@@ -60,6 +60,12 @@ const router = createBrowserRouter([
             },
         ]
     }
-])
+],
+    // --- PERUBAHAN ADA DI BAGIAN BAWAH INI (KOMA DAN OBJEK KONFIGURASI) ---
+    {
+        basename: '/final-project/dist'
+    }
+    // ---------------------------------------------------------------------
+)
 
 export default router;
