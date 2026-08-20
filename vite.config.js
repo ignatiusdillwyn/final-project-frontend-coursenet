@@ -4,7 +4,7 @@ import tailwindcss from "@tailwindcss/vite"
 
 export default defineConfig({
   // TAMBAHKAN BARIS INI:
-  base: '/final-project/dist/', 
+  base: '/', 
   
   plugins: [
     react(),
