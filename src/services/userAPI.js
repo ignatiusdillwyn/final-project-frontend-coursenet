@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const URL = import.meta.env.VITE_USER_API;
+const URL = 'https://api-toko-pak-edi.dillwyn.my.id/api/users';
 
 const register = async (payload) => {
     console.log('Register payload:', payload); // Debugging line
