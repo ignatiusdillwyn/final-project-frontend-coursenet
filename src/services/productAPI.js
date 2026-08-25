@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const URL = import.meta.env.VITE_PRODUCT_API;
+const URL = 'https://api-toko-pak-edi.dillwyn.my.id/api/products';
 
 const addProduct = async (payload, token) => {
     const response = await axios.post(`${URL}/create`, payload, {

@@ -28,7 +28,7 @@ const UpdateProduct = () => {
     const [pageLoaded, setPageLoaded] = useState(false);
 
     // Base URL untuk gambar
-    const API_BASE_URL = 'http://localhost:3000';
+    const API_BASE_URL = 'https://api-toko-pak-edi.dillwyn.my.id';
 
     // Format harga ke Rupiah
     const formatPrice = (price) => {

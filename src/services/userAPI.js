@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const URL = import.meta.env.VITE_USER_API;
+const URL = 'https://api-toko-pak-edi.dillwyn.my.id/api/users';
 
 const register = async (payload) => {
     console.log('Register payload:', payload); // Debugging line
@@ -13,8 +13,9 @@ const register = async (payload) => {
     return response.data;
 };
 
-const login = async (payload) => {
+const login = async (payload) => {  
     console.log('Login payload:', payload); // Debugging line
+    console.log('Login URL:', `${URL}/login`); // Debugging line
     const response = await axios.post(`${URL}/login`, payload, {
         headers: {
             'Content-Type': 'application/json', // Tentukan content type
