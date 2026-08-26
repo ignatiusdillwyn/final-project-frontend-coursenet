@@ -4,7 +4,7 @@ import MainLayout from "../layouts/MainLayout";
 import AuthLayout from "../layouts/AuthLayout";
 
 //Middleware
-import Middleware from "./Middleware";
+import Middleware from "./middleware";
 
 //Pages
 import Home from "../pages/Home";
