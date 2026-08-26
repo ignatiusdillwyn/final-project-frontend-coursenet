@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addProduct } from '../services/productAPI';
+import { addProduct, updateProductImage } from '../services/productAPI';
 import Swal from 'sweetalert2';
 
 const AddProduct = () => {
@@ -17,6 +17,7 @@ const AddProduct = () => {
   const [previewImage, setPreviewImage] = useState('');
   const [imageUploading, setImageUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [productId, setProductId] = useState(null);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
@@ -107,6 +108,16 @@ const AddProduct = () => {
     }).format(price);
   };
 
+  // Get full image URL
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    if (imagePath.startsWith('http')) return imagePath;
+    if (imagePath.startsWith('data:')) return imagePath;
+
+    const cleanPath = imagePath.startsWith('uploads/') ? imagePath : `uploads/${imagePath}`;
+    return `${API_BASE_URL}/${cleanPath}`;
+  };
+
   // Handle image selection
   const handleImageSelect = (e) => {
     const file = e.target.files[0];
@@ -114,13 +125,13 @@ const AddProduct = () => {
     if (!file) return;
     console.log('Selected file:', file);
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    // Validate file type - sesuai dengan backend (hanya JPEG, JPG, PNG)
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (!allowedTypes.includes(file.type)) {
       Swal.fire({
         icon: 'error',
         title: 'Invalid File Type',
-        text: 'Please select a valid image file (JPEG, JPG, PNG, WebP)',
+        text: 'Please select a valid image file (JPEG, JPG, PNG)',
         confirmButtonColor: '#4f46e5',
       });
       return;
@@ -319,6 +330,32 @@ const AddProduct = () => {
     return true;
   };
 
+  // Fungsi untuk upload image setelah product dibuat
+  const uploadImageAfterProductCreated = async (productId, token) => {
+    if (!selectedImage) return null;
+
+    try {
+      console.log('Uploading image for product ID:', productId);
+      const response = await updateProductImage(productId, selectedImage, token);
+      console.log('Image upload response:', response);
+      
+      // Update preview dengan URL dari server
+      if (response.data?.image) {
+        const imageUrl = getImageUrl(response.data.image);
+        setPreviewImage(imageUrl);
+        return response.data.image;
+      } else if (response.image) {
+        const imageUrl = getImageUrl(response.image);
+        setPreviewImage(imageUrl);
+        return response.image;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error uploading image after product created:', error);
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -353,6 +390,7 @@ const AddProduct = () => {
               <span class="font-medium">Name:</span> ${formData.name}<br>
               <span class="font-medium">Price:</span> ${formatPrice(parseInt(formData.price) || 0)}<br>
               <span class="font-medium">Stock:</span> ${formData.qty} units
+              ${selectedImage ? `<br><span class="font-medium">Image:</span> <span class="text-green-600">✅ Will be uploaded</span>` : ''}
             </p>
           </div>
         </div>
@@ -375,6 +413,7 @@ const AddProduct = () => {
             return false;
           }
 
+          // 1. Buat product dulu
           const payload = {
             name: formData.name,
             qty: parseInt(formData.qty),
@@ -383,11 +422,34 @@ const AddProduct = () => {
             description: formData.description
           };
 
-          await addProduct(payload, token);
+          console.log('Creating product with payload:', payload);
+          const productResponse = await addProduct(payload, token);
+          console.log('Product created response:', productResponse);
+
+          // Ambil ID produk dari response
+          const newProductId = productResponse.data?.id || productResponse.id;
+          setProductId(newProductId);
+
+          // 2. Jika ada gambar yang dipilih, upload setelah product berhasil dibuat
+          if (selectedImage && newProductId) {
+            try {
+              console.log('Uploading image for new product...');
+              await uploadImageAfterProductCreated(newProductId, token);
+            } catch (uploadError) {
+              console.error('Error uploading image:', uploadError);
+              // Product tetap dibuat meskipun upload gambar gagal
+              // Tapi kita tampilkan warning
+              Swal.showValidationMessage(
+                `Product created but image upload failed: ${uploadError.message || 'Please try again later'}`
+              );
+            }
+          }
+
           return true;
         } catch (err) {
+          console.error('Error creating product:', err);
           Swal.showValidationMessage(
-            `Failed: ${err.response?.data?.message || 'Please try again'}`
+            `Failed: ${err.response?.data?.message || err.message || 'Please try again'}`
           );
           return false;
         } finally {
@@ -410,6 +472,7 @@ const AddProduct = () => {
             </div>
             <p class="text-lg font-semibold text-gray-800">Product created successfully!</p>
             ${previewImage ? `<img src="${previewImage}" alt="${formData.name}" class="w-24 h-24 object-cover rounded-lg mx-auto mt-4 border border-gray-200 shadow-lg">` : ''}
+            ${selectedImage ? '<p class="text-sm text-green-600 mt-2">✅ Image uploaded successfully!</p>' : ''}
           </div>
         `,
         timer: 2000,
@@ -515,35 +578,6 @@ const AddProduct = () => {
       handleImageSelect(fakeEvent);
     }
   };
-
-  if (false) { // Tidak ada loading state untuk AddProduct
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 flex flex-col items-center justify-center">
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full blur-3xl opacity-20 animate-pulse"></div>
-          <div className="relative">
-            <div className="loading-spinner">
-              <div className="spinner-ring"></div>
-              <div className="spinner-ring"></div>
-              <div className="spinner-ring"></div>
-              <div className="spinner-ring"></div>
-              <div className="spinner-center"></div>
-            </div>
-          </div>
-        </div>
-        <p className="mt-8 text-xl text-white font-light tracking-wider animate-pulse">
-          Loading product data<span className="loading-dots">...</span>
-        </p>
-        <div className="mt-4 text-gray-400 text-sm">
-          <div className="flex space-x-1">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.1}s` }}></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>
@@ -803,16 +837,17 @@ const AddProduct = () => {
                         <div
                           onDragOver={handleDragOver}
                           onDrop={handleDrop}
-                          className={`relative overflow-hidden border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${selectedImage
+                          className={`relative overflow-hidden border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${
+                            selectedImage
                               ? 'border-yellow-500 bg-yellow-900/20'
                               : 'border-gray-700 hover:border-purple-500 bg-gray-900/30 hover:bg-gray-900/50'
-                            }`}
+                          }`}
                           onClick={() => fileInputRef.current?.click()}
                         >
                           <input
                             ref={fileInputRef}
                             type="file"
-                            accept="image/jpeg, image/jpg, image/png, image/webp"
+                            accept="image/jpeg, image/jpg, image/png"
                             onChange={handleImageSelect}
                             className="hidden"
                             disabled={imageUploading || loading}
@@ -827,7 +862,7 @@ const AddProduct = () => {
                                 {selectedImage ? 'Image selected!' : 'Drag & drop or click to upload'}
                               </p>
                               <p className="text-sm text-gray-400 mt-2">
-                                PNG, JPG, WebP up to 5MB
+                                PNG, JPG, JPEG up to 5MB
                               </p>
                             </div>
                             <div className="pt-4">
@@ -853,10 +888,11 @@ const AddProduct = () => {
                                 type="button"
                                 onClick={handleImageUpload}
                                 disabled={imageUploading || loading}
-                                className={`relative overflow-hidden px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 ${imageUploading
+                                className={`relative overflow-hidden px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 ${
+                                  imageUploading
                                     ? 'bg-green-700 cursor-not-allowed text-white'
                                     : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg shadow-green-500/25'
-                                  }`}
+                                }`}
                               >
                                 <div className="absolute inset-0 animate-shimmer"></div>
                                 <div className="relative flex items-center">
@@ -1063,10 +1099,11 @@ const AddProduct = () => {
                       <button
                         type="submit"
                         disabled={loading || imageUploading}
-                        className={`relative overflow-hidden px-8 py-3 rounded-xl font-bold text-white transition-all duration-300 transform hover:scale-105 ${loading || imageUploading
+                        className={`relative overflow-hidden px-8 py-3 rounded-xl font-bold text-white transition-all duration-300 transform hover:scale-105 ${
+                          loading || imageUploading
                             ? 'bg-indigo-800 cursor-not-allowed'
                             : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 shadow-lg shadow-purple-500/25'
-                          }`}
+                        }`}
                       >
                         <div className="absolute inset-0 animate-shimmer"></div>
                         <div className="relative flex items-center justify-center">
