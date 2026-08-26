@@ -3,6 +3,9 @@ import { createBrowserRouter } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import AuthLayout from "../layouts/AuthLayout";
 
+//Middleware
+import Middleware from "./Middleware";
+
 //Pages
 import Home from "../pages/Home";
 import About from "../pages/About";
@@ -15,7 +18,11 @@ import AddProduct from "../pages/AddProduct";
 
 const router = createBrowserRouter([
     {
-        element: <MainLayout />,
+        element: (
+            <Middleware>
+                <MainLayout />
+            </Middleware>
+        ),
         children: [
             {
                 path: "/",
