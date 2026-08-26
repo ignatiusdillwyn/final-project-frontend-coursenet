@@ -27,8 +27,9 @@ const UpdateProduct = () => {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [pageLoaded, setPageLoaded] = useState(false);
 
-    // Base URL untuk gambar
-    const API_BASE_URL = 'http://localhost:3000';
+    // Base URL untuk 
+    // const API_BASE_URL = 'http://localhost:3000';
+    const API_BASE_URL = import.meta.env.VITE_API;
 
     // Format harga ke Rupiah
     const formatPrice = (price) => {

@@ -17,7 +17,8 @@ const Products = () => {
     const navigate = useNavigate();
 
     // Base URL untuk gambar
-    const API_BASE_URL = 'http://localhost:3000';
+    // const API_BASE_URL = 'http://localhost:3000';
+    const API_BASE_URL = import.meta.env.VITE_API;
 
     // Format harga ke Rupiah
     const formatPrice = (price) => {
