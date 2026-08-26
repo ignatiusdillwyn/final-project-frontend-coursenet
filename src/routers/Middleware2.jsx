@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom';
 
-const Middleware = ({ children }) => {
+const Middleware2 = ({ children }) => {
     const token = localStorage.getItem('token');
     console.log('middleware: token =', token);
     if (!token) {
@@ -10,4 +10,4 @@ const Middleware = ({ children }) => {
     return <>{children}</>; // Mengembalikan layout beserta isinya
 };
 
-export default Middleware;
+export default Middleware2;
