@@ -1,3 +1,4 @@
+// frontend/src/components/Products.js
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchAllProduct, deleteProduct, searchProduct } from '../services/productAPI';
@@ -14,6 +15,9 @@ const Products = () => {
     const [pageLoaded, setPageLoaded] = useState(false);
     const [statsAnimated, setStatsAnimated] = useState([false, false, false]);
     const navigate = useNavigate();
+
+    // Base URL untuk gambar
+    const API_BASE_URL = 'http://localhost:3000';
 
     // Format harga ke Rupiah
     const formatPrice = (price) => {
@@ -32,6 +36,16 @@ const Products = () => {
             month: 'short',
             year: 'numeric'
         });
+    };
+
+    // Get full image URL
+    const getImageUrl = (imagePath) => {
+        if (!imagePath) return null;
+        if (imagePath.startsWith('http')) return imagePath;
+        if (imagePath.startsWith('data:')) return imagePath;
+
+        const cleanPath = imagePath.startsWith('uploads/') ? imagePath : `uploads/${imagePath}`;
+        return `${API_BASE_URL}/${cleanPath}`;
     };
 
     // Animate stats numbers
@@ -124,10 +138,8 @@ const Products = () => {
             animate();
         };
 
-        // Create particles periodically
         const particleInterval = setInterval(createParticle, 300);
 
-        // Create initial particles
         for (let i = 0; i < 20; i++) {
             setTimeout(createParticle, i * 100);
         }
@@ -138,96 +150,93 @@ const Products = () => {
         };
     }, []);
 
-// Fetch all products
-const loadAllProducts = async () => {
-    try {
-        setLoading(true);
-        setError('');
-        const token = localStorage.getItem('token');
-
-        if (!token) {
-            navigate('/login');
-            return;
-        }
-
-        const response = await fetchAllProduct(token);
-        console.log('Fetched products response:', response);
-
-        // FIX: Your backend returns { status, message, products }
-        if (response && response.products) {
-            setProducts(response.products);
+    // Fetch all products
+    const loadAllProducts = async () => {
+        try {
+            setLoading(true);
             setError('');
-        } else if (response && response.data) {
-            // Fallback for other structures
-            setProducts(response.data);
-            setError('');
-        } else {
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                navigate('/login');
+                return;
+            }
+
+            const response = await fetchAllProduct(token);
+            console.log('Fetched products response:', response);
+
+            // Response dari backend: { status, message, products }
+            if (response && response.products) {
+                setProducts(response.products);
+                setError('');
+            } else if (response && response.data) {
+                // Fallback untuk struktur lain
+                setProducts(response.data);
+                setError('');
+            } else {
+                setProducts([]);
+                setError('No products found');
+            }
+
+        } catch (err) {
+            console.error('Error fetching products:', err);
+            setError('Failed to load products. Please try again.');
             setProducts([]);
-            setError('No products found');
+        } finally {
+            setLoading(false);
         }
-
-    } catch (err) {
-        console.error('Error fetching products:', err);
-        setError('Failed to load products. Please try again.');
-        setProducts([]);
-    } finally {
-        setLoading(false);
-    }
-};
+    };
 
     // Handle search product
-// Handle search product
-const handleSearch = async (searchQuery) => {
-    if (!searchQuery.trim()) {
-        loadAllProducts();
-        return;
-    }
-
-    try {
-        setSearchLoading(true);
-        const token = localStorage.getItem('token');
-
-        if (!token) {
-            navigate('/login');
+    const handleSearch = async (searchQuery) => {
+        if (!searchQuery.trim()) {
+            loadAllProducts();
             return;
         }
 
-        const response = await searchProduct(searchQuery, token);
-        console.log('Search response:', response);
-        
-        // FIX: Your backend returns { status, products }
-        if (response && response.products) {
-            if (response.products.length > 0) {
-                setProducts(response.products);
+        try {
+            setSearchLoading(true);
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                navigate('/login');
+                return;
+            }
+
+            const response = await searchProduct(searchQuery, token);
+            console.log('Search response:', response);
+            
+            if (response && response.products) {
+                if (response.products.length > 0) {
+                    setProducts(response.products);
+                    setError('');
+                } else {
+                    setProducts([]);
+                    setError('No products found matching your search');
+                }
+            } else if (response && response.data && response.data.length > 0) {
+                setProducts(response.data);
                 setError('');
             } else {
                 setProducts([]);
                 setError('No products found matching your search');
             }
-        } else if (response && response.data && response.data.length > 0) {
-            // Fallback for other response structures
-            setProducts(response.data);
-            setError('');
-        } else {
-            setProducts([]);
-            setError('No products found matching your search');
-        }
-    } catch (err) {
-        console.error('Error searching products:', err);
-        // Fallback to client-side filtering
-        const filtered = products.filter(product =>
-            product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            product.description?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-        setProducts(filtered);
+        } catch (err) {
+            console.error('Error searching products:', err);
+            // Fallback ke client-side filtering
+            const filtered = products.filter(product =>
+                product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                product.description?.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            setProducts(filtered);
 
-        if (filtered.length === 0) {
-            setError('No products found matching your search');
+            if (filtered.length === 0) {
+                setError('No products found matching your search');
+            }
+        } finally {
+            setSearchLoading(false);
         }
-    } finally {
-        setSearchLoading(false);
-    }
-};
+    };
 
     // Debounce search input
     const handleSearchChange = (e) => {
@@ -341,7 +350,6 @@ const handleSearch = async (searchQuery) => {
 
     // Handle edit product
     const handleEdit = (product) => {
-        // Add ripple effect to button
         const button = document.querySelector(`[data-edit-id="${product.id}"]`);
         if (button) {
             const ripple = document.createElement('span');
@@ -359,7 +367,6 @@ const handleSearch = async (searchQuery) => {
 
     // Handle add new product
     const handleAddProduct = () => {
-        // Add flash effect to button
         const button = document.querySelector('[data-add-product]');
         if (button) {
             button.classList.add('button-flash');
@@ -549,6 +556,30 @@ const handleSearch = async (searchQuery) => {
                     justify-content: center;
                     border-radius: 12px;
                     font-size: 28px;
+                }
+
+                .product-image {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+
+                .product-image-placeholder {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 100%;
+                    height: 100%;
+                    font-size: 64px;
+                    background: linear-gradient(135deg, #1a1a2e, #16213e);
+                }
+
+                .image-container {
+                    position: relative;
+                    width: 100%;
+                    height: 200px;
+                    overflow: hidden;
+                    background: linear-gradient(135deg, #1a1a2e, #16213e);
                 }
             `}</style>
 
@@ -828,7 +859,7 @@ const handleSearch = async (searchQuery) => {
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <h2 className="text-2xl font-bold text-white">
-                                                        Search Results for "<span className="text-purple-300">"{searchTerm}"</span>"
+                                                        Search Results for "<span className="text-purple-300">{searchTerm}</span>"
                                                     </h2>
                                                     <p className="text-gray-400 mt-1">
                                                         Found <span className="text-yellow-300 font-bold">{products.length}</span> product{products.length !== 1 ? 's' : ''}
@@ -851,28 +882,8 @@ const handleSearch = async (searchQuery) => {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                         {products.map((product, index) => {
-                                            // Determine icon based on product name or category
-                                            const getProductIcon = (name) => {
-                                                const nameLower = name.toLowerCase();
-                                                if (nameLower.includes('phone') || nameLower.includes('mobile')) return '📱';
-                                                if (nameLower.includes('laptop') || nameLower.includes('computer')) return '💻';
-                                                if (nameLower.includes('shirt') || nameLower.includes('clothes')) return '👕';
-                                                if (nameLower.includes('book')) return '📚';
-                                                if (nameLower.includes('food')) return '🍔';
-                                                if (nameLower.includes('drink')) return '🥤';
-                                                if (nameLower.includes('shoe')) return '👟';
-                                                if (nameLower.includes('watch')) return '⌚';
-                                                return '📦';
-                                            };
-
-                                            const productIcon = getProductIcon(product.name);
-                                            const iconColor = [
-                                                'from-blue-500 to-cyan-500',
-                                                'from-purple-500 to-pink-500',
-                                                'from-emerald-500 to-green-500',
-                                                'from-orange-500 to-red-500',
-                                                'from-indigo-500 to-blue-500'
-                                            ][index % 5];
+                                            const imageUrl = getImageUrl(product.image);
+                                            const hasImage = imageUrl && product.image && product.image !== '';
 
                                             return (
                                                 <div
@@ -894,46 +905,58 @@ const handleSearch = async (searchQuery) => {
 
                                                     {/* Main Card */}
                                                     <div className="relative bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-lg border border-gray-700/50 group-hover:border-purple-500/50 transition-all duration-300 h-full rounded-2xl overflow-hidden">
-                                                        {/* Product Icon Header */}
-                                                        <div className="relative h-40 overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800">
-                                                            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-purple-900/20 to-indigo-900/20 z-10"></div>
+                                                        {/* Product Image */}
+                                                        <div className="image-container">
+                                                            {hasImage ? (
+                                                                <img
+                                                                    src={imageUrl}
+                                                                    alt={product.name}
+                                                                    className="product-image group-hover:scale-110 transition-transform duration-500"
+                                                                    onError={(e) => {
+                                                                        e.target.style.display = 'none';
+                                                                        e.target.nextElementSibling.style.display = 'flex';
+                                                                    }}
+                                                                />
+                                                            ) : null}
+                                                            <div 
+                                                                className="product-image-placeholder"
+                                                                style={{ display: hasImage ? 'none' : 'flex' }}
+                                                            >
+                                                                {product.name?.charAt(0).toUpperCase() || '📦'}
+                                                            </div>
 
-                                                            <div className="relative h-full flex flex-col items-center justify-center p-6">
-                                                                <div className={`product-icon bg-gradient-to-br ${iconColor} mb-4 transform group-hover:scale-110 transition-transform duration-300`}>
-                                                                    <span>{productIcon}</span>
-                                                                </div>
-
-                                                                <h3 className="text-xl font-bold text-white text-center truncate max-w-full group-hover:text-purple-200 transition-colors duration-300">
-                                                                    {product.name}
-                                                                </h3>
-
-                                                                <div className="absolute top-4 right-4 z-20">
-                                                                    <div className="relative">
-                                                                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full blur opacity-50 animate-pulse"></div>
-                                                                        <span className="relative bg-gray-900/90 backdrop-blur-sm text-emerald-300 text-xs font-bold px-3 py-1.5 rounded-full border border-emerald-500/30">
-                                                                            {product.qty} in stock
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="absolute top-4 left-4 z-20">
-                                                                    <span className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-full">
-                                                                        ID: #{product.id}
+                                                            {/* Stock Badge */}
+                                                            <div className="absolute top-4 right-4 z-20">
+                                                                <div className="relative">
+                                                                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full blur opacity-50 animate-pulse"></div>
+                                                                    <span className="relative bg-gray-900/90 backdrop-blur-sm text-emerald-300 text-xs font-bold px-3 py-1.5 rounded-full border border-emerald-500/30">
+                                                                        {product.qty} in stock
                                                                     </span>
                                                                 </div>
+                                                            </div>
+
+                                                            {/* ID Badge */}
+                                                            <div className="absolute top-4 left-4 z-20">
+                                                                <span className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                                                                    ID: #{product.id}
+                                                                </span>
                                                             </div>
                                                         </div>
 
                                                         {/* Product Info */}
                                                         <div className="p-5">
+                                                            <h3 className="text-xl font-bold text-white mb-2 truncate group-hover:text-purple-200 transition-colors duration-300">
+                                                                {product.name}
+                                                            </h3>
+
                                                             <p className="text-gray-400 text-sm mb-4 line-clamp-2 h-10 group-hover:text-gray-300 transition-colors duration-300">
                                                                 {product.description || 'No description available'}
                                                             </p>
 
                                                             <div className="space-y-3 mb-6">
                                                                 <div className="flex items-center justify-between">
-                                                                    <span className="text-sm text-gray-500 mr-42">Price</span>
-                                                                    <span className="text-xl font-bold text-white animate-pulse mt-6">
+                                                                    <span className="text-sm text-gray-500">Price</span>
+                                                                    <span className="text-xl font-bold text-white">
                                                                         {formatPrice(product.price)}
                                                                     </span>
                                                                 </div>
@@ -953,7 +976,7 @@ const handleSearch = async (searchQuery) => {
                                                                 </div>
                                                             </div>
 
-                                                            {/* Action Buttons with Hover Effects */}
+                                                            {/* Action Buttons */}
                                                             <div className="flex space-x-2">
                                                                 <button
                                                                     data-edit-id={product.id}

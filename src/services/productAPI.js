@@ -22,6 +22,16 @@ const fetchAllProduct = async (token) => {
     return response.data; // Returns { status, message, products }
 };
 
+const fetchProductById = async (id, token) => {
+    const response = await axios.get(`${URL}/product-detail/${id}`, {
+        headers: {
+            'Content-Type': 'application/json',
+            'access_token': token
+        }
+    });
+    return response.data; // Returns { status, message, products }
+};
+
 const updateProduct = async (id, payload, token) => {
     const response = await axios.put(`${URL}/edit/${id}`, payload, {
         headers: {
@@ -57,7 +67,7 @@ const updateProductImage = async (id, imageFile, token) => {
     try {
         const formData = new FormData();
         formData.append('image', imageFile);
-
+        console.log('FormData:', formData.get('image')); // Debugging line to check if the image is appended correctly
         const response = await axios.put(
             `${URL}/updateProductImage/${id}`,
             formData,
@@ -75,4 +85,12 @@ const updateProductImage = async (id, imageFile, token) => {
     }
 };
 
-export { addProduct, fetchAllProduct, updateProduct, deleteProduct, searchProduct, updateProductImage };
+export {
+    addProduct,
+    fetchAllProduct,
+    fetchProductById,
+    updateProduct,
+    deleteProduct,
+    searchProduct,
+    updateProductImage
+};

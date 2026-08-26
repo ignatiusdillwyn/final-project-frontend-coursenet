@@ -1,6 +1,7 @@
+// frontend/src/components/UpdateProduct.js
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { updateProduct, fetchAllProduct, updateProductImage } from '../services/productAPI';
+import { updateProduct, fetchProductById, updateProductImage } from '../services/productAPI';
 import Swal from 'sweetalert2';
 
 const UpdateProduct = () => {
@@ -24,7 +25,6 @@ const UpdateProduct = () => {
     const [error, setError] = useState('');
     const [imageUploading, setImageUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
-    const [hoveredCard, setHoveredCard] = useState(null);
     const [pageLoaded, setPageLoaded] = useState(false);
 
     // Base URL untuk gambar
@@ -116,20 +116,46 @@ const UpdateProduct = () => {
         };
     }, []);
 
-    // Fetch product data if not passed via state
+    // Fetch product data by ID
     useEffect(() => {
         const fetchProductData = async () => {
-            if (!productData && id) {
+            // Jika ada data dari location state, gunakan itu
+            if (productData) {
+                setFormData({
+                    name: productData.name || '',
+                    qty: productData.qty?.toString() || '',
+                    price: productData.price?.toString() || '',
+                    image: productData.image || '',
+                    description: productData.description || ''
+                });
+
+                if (productData.image) {
+                    const imageUrl = getImageUrl(productData.image);
+                    console.log('Image URL: ', imageUrl);
+                    setPreviewImage(imageUrl);
+                }
+
+                setIsLoadingProduct(false);
+                return;
+            }
+
+            // Jika tidak ada data dari state, fetch berdasarkan ID
+            if (id) {
                 try {
                     setIsLoadingProduct(true);
                     const token = localStorage.getItem('token');
+                    
                     if (!token) {
                         navigate('/login');
                         return;
                     }
 
-                    const response = await fetchAllProduct(token);
-                    const product = response.data?.find(p => p.id === parseInt(id));
+                    console.log('Fetching product with ID:', id);
+                    const response = await fetchProductById(id, token);
+                    console.log('Product detail response:', response);
+
+                    // Ambil data dari response.data
+                    const product = response.data;
 
                     if (product) {
                         setFormData({
@@ -149,39 +175,23 @@ const UpdateProduct = () => {
                         Swal.fire({
                             icon: 'error',
                             title: 'Product Not Found',
-                            text: 'The product you are trying to edit does not exist',
+                            text: `Product with ID ${id} does not exist`,
                             confirmButtonColor: '#4f46e5',
                         }).then(() => {
                             navigate('/products');
                         });
                     }
                 } catch (err) {
+                    console.error('Error fetching product:', err);
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
-                        text: 'Failed to load product data',
+                        text: err.response?.data?.message || 'Failed to load product data',
                         confirmButtonColor: '#4f46e5',
                     });
-                    console.error('Error fetching product:', err);
                 } finally {
                     setIsLoadingProduct(false);
                 }
-            } else if (productData) {
-                setFormData({
-                    name: productData.name || '',
-                    qty: productData.qty?.toString() || '',
-                    price: productData.price?.toString() || '',
-                    image: productData.image || '',
-                    description: productData.description || ''
-                });
-
-                // Set preview image
-                if (productData.image) {
-                    const imageUrl = getImageUrl(productData.image);
-                    setPreviewImage(imageUrl);
-                }
-
-                setIsLoadingProduct(false);
             }
         };
 
@@ -202,13 +212,13 @@ const UpdateProduct = () => {
 
         if (!file) return;
 
-        // Validate file type
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        // Validate file type - sesuai dengan backend
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
         if (!allowedTypes.includes(file.type)) {
             Swal.fire({
                 icon: 'error',
                 title: 'Invalid File Type',
-                text: 'Please select a valid image file (JPEG, JPG, PNG, WebP)',
+                text: 'Please select a valid image file (JPEG, JPG, PNG)',
                 confirmButtonColor: '#4f46e5',
             });
             return;
@@ -289,29 +299,46 @@ const UpdateProduct = () => {
                         });
                     }, 200);
 
+                    console.log('Uploading image for product:', id);
+                    console.log('Selected image:', selectedImage);
+
                     // Upload image
                     const response = await updateProductImage(id, selectedImage, token);
+                    console.log('Upload response:', response);
 
                     clearInterval(progressInterval);
                     setUploadProgress(100);
 
                     // Update form data with new image URL
                     if (response.data?.image) {
-                        const imageUrl = getImageUrl(response.data.image);
+                        const imagePath = response.data.image;
+                        const imageUrl = getImageUrl(imagePath);
                         setFormData(prev => ({
                             ...prev,
-                            image: response.data.image
+                            image: imagePath
+                        }));
+                        setPreviewImage(imageUrl);
+                    } else if (response.image) {
+                        const imagePath = response.image;
+                        const imageUrl = getImageUrl(imagePath);
+                        setFormData(prev => ({
+                            ...prev,
+                            image: imagePath
                         }));
                         setPreviewImage(imageUrl);
                     }
 
                     // Clear selected image
                     setSelectedImage(null);
+                    if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                    }
 
                     return true;
                 } catch (err) {
+                    console.error('Upload error:', err);
                     Swal.showValidationMessage(
-                        `Upload Failed: ${err.response?.data?.message || 'Please try again'}`
+                        `Upload Failed: ${err.response?.data?.message || err.message || 'Please try again'}`
                     );
                     return false;
                 } finally {
@@ -473,11 +500,13 @@ const UpdateProduct = () => {
                         description: formData.description
                     };
 
+                    console.log('Updating product with payload:', payload);
                     await updateProduct(id, payload, token);
                     return true;
                 } catch (err) {
+                    console.error('Update error:', err);
                     Swal.showValidationMessage(
-                        `Failed: ${err.response?.data?.message || 'Please try again'}`
+                        `Failed: ${err.response?.data?.message || err.message || 'Please try again'}`
                     );
                     return false;
                 } finally {
@@ -558,35 +587,62 @@ const UpdateProduct = () => {
             cancelButtonText: 'Cancel',
             reverseButtons: true
         }).then((result) => {
-            if (result.isConfirmed && productData) {
-                setFormData({
-                    name: productData.name || '',
-                    qty: productData.qty?.toString() || '',
-                    price: productData.price?.toString() || '',
-                    image: productData.image || '',
-                    description: productData.description || ''
-                });
+            if (result.isConfirmed) {
+                // Reload product data
+                const reloadProduct = async () => {
+                    try {
+                        setIsLoadingProduct(true);
+                        const token = localStorage.getItem('token');
+                        if (!token) {
+                            navigate('/login');
+                            return;
+                        }
+                        
+                        const response = await fetchProductById(id, token);
+                        const product = response.data;
+                        
+                        if (product) {
+                            setFormData({
+                                name: product.name || '',
+                                qty: product.qty?.toString() || '',
+                                price: product.price?.toString() || '',
+                                image: product.image || '',
+                                description: product.description || ''
+                            });
 
-                if (productData.image) {
-                    const imageUrl = getImageUrl(productData.image);
-                    setPreviewImage(imageUrl);
-                } else {
-                    setPreviewImage('');
-                }
+                            if (product.image) {
+                                const imageUrl = getImageUrl(product.image);
+                                setPreviewImage(imageUrl);
+                            } else {
+                                setPreviewImage('');
+                            }
 
-                setSelectedImage(null);
-                if (fileInputRef.current) {
-                    fileInputRef.current.value = '';
-                }
+                            setSelectedImage(null);
+                            if (fileInputRef.current) {
+                                fileInputRef.current.value = '';
+                            }
 
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Changes Reset',
-                    text: 'Form has been reset to original values',
-                    timer: 1500,
-                    showConfirmButton: false,
-                    confirmButtonColor: '#4f46e5',
-                });
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Changes Reset',
+                                text: 'Form has been reset to original values',
+                                timer: 1500,
+                                showConfirmButton: false,
+                            });
+                        }
+                    } catch (err) {
+                        console.error('Error reloading product:', err);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Failed to reload product data',
+                        });
+                    } finally {
+                        setIsLoadingProduct(false);
+                    }
+                };
+                
+                reloadProduct();
             }
         });
     };
@@ -839,7 +895,7 @@ const UpdateProduct = () => {
                                                         onChange={handleChange}
                                                         className="block w-full pl-10 pr-3 py-3 bg-gray-900/50 border border-gray-700 text-white placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
                                                         placeholder="Enter product name"
-                                                        disabled={loading}
+                                                        disabled={loading || imageUploading}
                                                     />
                                                 </div>
                                             </div>
@@ -885,9 +941,9 @@ const UpdateProduct = () => {
                                                                             </p>
                                                                         </>
                                                                     )}
-                                                                    {!selectedImage && productData?.image && (
+                                                                    {!selectedImage && formData.image && (
                                                                         <p className="text-sm text-gray-400 mt-2">
-                                                                            Image path: <span className="font-mono text-blue-300 text-xs">{productData.image}</span>
+                                                                            Image path: <span className="font-mono text-blue-300 text-xs">{formData.image}</span>
                                                                         </p>
                                                                     )}
                                                                 </div>
@@ -921,16 +977,17 @@ const UpdateProduct = () => {
                                                 <div
                                                     onDragOver={handleDragOver}
                                                     onDrop={handleDrop}
-                                                    className={`relative overflow-hidden border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${selectedImage
+                                                    className={`relative overflow-hidden border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${
+                                                        selectedImage
                                                             ? 'border-yellow-500 bg-yellow-900/20'
                                                             : 'border-gray-700 hover:border-purple-500 bg-gray-900/30 hover:bg-gray-900/50'
-                                                        }`}
+                                                    }`}
                                                     onClick={() => fileInputRef.current?.click()}
                                                 >
                                                     <input
                                                         ref={fileInputRef}
                                                         type="file"
-                                                        accept="image/jpeg, image/jpg, image/png, image/webp"
+                                                        accept="image/jpeg, image/jpg, image/png"
                                                         onChange={handleImageSelect}
                                                         className="hidden"
                                                         disabled={imageUploading || loading}
@@ -945,7 +1002,7 @@ const UpdateProduct = () => {
                                                                 {selectedImage ? 'Image selected!' : 'Drag & drop or click to upload'}
                                                             </p>
                                                             <p className="text-sm text-gray-400 mt-2">
-                                                                PNG, JPG, WebP up to 5MB
+                                                                PNG, JPG, JPEG up to 5MB
                                                             </p>
                                                         </div>
                                                         <div className="pt-4">
@@ -971,10 +1028,11 @@ const UpdateProduct = () => {
                                                                 type="button"
                                                                 onClick={handleImageUpload}
                                                                 disabled={imageUploading || loading}
-                                                                className={`relative overflow-hidden px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 ${imageUploading
+                                                                className={`relative overflow-hidden px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 ${
+                                                                    imageUploading
                                                                         ? 'bg-green-700 cursor-not-allowed text-white'
                                                                         : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg shadow-green-500/25'
-                                                                    }`}
+                                                                }`}
                                                             >
                                                                 <div className="absolute inset-0 animate-shimmer"></div>
                                                                 <div className="relative flex items-center">
@@ -1051,7 +1109,7 @@ const UpdateProduct = () => {
                                                             min="1"
                                                             className="block w-full pl-10 pr-3 py-3 bg-gray-900/50 border border-gray-700 text-white placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300"
                                                             placeholder="Enter quantity"
-                                                            disabled={loading}
+                                                            disabled={loading || imageUploading}
                                                         />
                                                     </div>
                                                 </div>
@@ -1076,7 +1134,7 @@ const UpdateProduct = () => {
                                                                 onChange={handlePriceChange}
                                                                 className="block w-full pl-3 py-3 bg-gray-900/50 border border-gray-700 text-white placeholder-gray-400 rounded-r-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300"
                                                                 placeholder="Enter price"
-                                                                disabled={loading}
+                                                                disabled={loading || imageUploading}
                                                             />
                                                         </div>
                                                         {formData.price && (
@@ -1104,7 +1162,7 @@ const UpdateProduct = () => {
                                                         rows="6"
                                                         className="block w-full px-3 py-3 bg-gray-900/50 border border-gray-700 text-white placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-300 resize-none"
                                                         placeholder="Enter product description..."
-                                                        disabled={loading}
+                                                        disabled={loading || imageUploading}
                                                     />
                                                     <div className="flex justify-between items-center mt-2">
                                                         <div className="text-sm text-gray-400">
@@ -1138,22 +1196,22 @@ const UpdateProduct = () => {
                                                     <div className="space-y-3 text-sm">
                                                         <div className="flex justify-between items-center p-2 bg-gray-900/50 rounded-lg">
                                                             <span className="text-yellow-300">Name:</span>
-                                                            <span className="font-medium text-white truncate max-w-[150px]">{productData?.name || 'Loading...'}</span>
+                                                            <span className="font-medium text-white truncate max-w-[150px]">{formData.name || 'Loading...'}</span>
                                                         </div>
                                                         <div className="flex justify-between items-center p-2 bg-gray-900/50 rounded-lg">
                                                             <span className="text-yellow-300">Quantity:</span>
-                                                            <span className="font-medium text-white">{productData?.qty || '0'}</span>
+                                                            <span className="font-medium text-white">{formData.qty || '0'}</span>
                                                         </div>
                                                         <div className="flex justify-between items-center p-2 bg-gray-900/50 rounded-lg">
                                                             <span className="text-yellow-300">Price:</span>
                                                             <span className="font-medium text-white">
-                                                                {productData?.price ? formatPrice(productData.price) : 'Rp 0'}
+                                                                {formData.price ? formatPrice(parseInt(formData.price)) : 'Rp 0'}
                                                             </span>
                                                         </div>
                                                         <div className="flex justify-between items-center p-2 bg-gray-900/50 rounded-lg">
                                                             <span className="text-yellow-300">Image:</span>
-                                                            <span className={`font-medium ${productData?.image ? 'text-green-400' : 'text-red-400'}`}>
-                                                                {productData?.image ? '✅ Available' : '❌ Not set'}
+                                                            <span className={`font-medium ${previewImage ? 'text-green-400' : 'text-red-400'}`}>
+                                                                {previewImage ? '✅ Available' : '❌ Not set'}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -1200,7 +1258,7 @@ const UpdateProduct = () => {
                                                 <button
                                                     type="button"
                                                     onClick={handleReset}
-                                                    disabled={loading || imageUploading || !productData}
+                                                    disabled={loading || imageUploading}
                                                     className="relative overflow-hidden px-6 py-3 border border-yellow-700/50 bg-gradient-to-r from-yellow-900/30 to-orange-900/30 text-yellow-300 rounded-xl hover:from-yellow-900/50 hover:to-orange-900/50 transition-all duration-300 transform hover:scale-105 font-medium flex-1 sm:flex-none"
                                                 >
                                                     <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1212,10 +1270,11 @@ const UpdateProduct = () => {
                                             <button
                                                 type="submit"
                                                 disabled={loading || imageUploading}
-                                                className={`relative overflow-hidden px-8 py-3 rounded-xl font-bold text-white transition-all duration-300 transform hover:scale-105 ${loading || imageUploading
+                                                className={`relative overflow-hidden px-8 py-3 rounded-xl font-bold text-white transition-all duration-300 transform hover:scale-105 ${
+                                                    loading || imageUploading
                                                         ? 'bg-indigo-800 cursor-not-allowed'
                                                         : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 shadow-lg shadow-purple-500/25'
-                                                    }`}
+                                                }`}
                                             >
                                                 <div className="absolute inset-0 animate-shimmer"></div>
                                                 <div className="relative flex items-center justify-center">
@@ -1226,6 +1285,14 @@ const UpdateProduct = () => {
                                                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                             </svg>
                                                             Updating...
+                                                        </>
+                                                    ) : imageUploading ? (
+                                                        <>
+                                                            <svg className="animate-spin h-5 w-5 mr-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                            </svg>
+                                                            Uploading Image...
                                                         </>
                                                     ) : (
                                                         <>
