@@ -1,3 +1,4 @@
+// frontend/src/components/AddProduct.js
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addProduct, updateProductImage } from '../services/productAPI';
@@ -22,9 +23,8 @@ const AddProduct = () => {
   const navigate = useNavigate();
 
   // Base URL untuk gambar
-  // const API_BASE_URL = 'http://localhost:3000';
-  const API_BASE_URL = import.meta.env.VITE_API;
-  
+  const API_BASE_URL = import.meta.env.VITE_API || 'http://localhost:3000';
+
   // Page entrance animation
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -160,104 +160,6 @@ const AddProduct = () => {
     reader.readAsDataURL(file);
   };
 
-  // Handle image upload
-  const handleImageUpload = async () => {
-    if (!selectedImage) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'No Image Selected',
-        text: 'Please select an image first',
-        confirmButtonColor: '#4f46e5',
-      });
-      return;
-    }
-
-    const result = await Swal.fire({
-      title: 'Upload Image?',
-      html: `
-        <div class="text-left">
-          <p class="mb-2">Upload image for this product?</p>
-          <div class="bg-gray-50 p-3 rounded-lg mt-3">
-            <p class="text-sm font-medium text-gray-700">File: <span class="font-bold">${selectedImage.name}</span></p>
-            <p class="text-sm font-medium text-gray-700 mt-1">Size: <span class="font-bold">${(selectedImage.size / 1024).toFixed(2)} KB</span></p>
-          </div>
-        </div>
-      `,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#4f46e5',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Yes, Upload Image',
-      cancelButtonText: 'Cancel',
-      reverseButtons: true,
-      showLoaderOnConfirm: true,
-      preConfirm: async () => {
-        try {
-          setImageUploading(true);
-          setUploadProgress(0);
-
-          const token = localStorage.getItem('token');
-          if (!token) {
-            navigate('/login');
-            return false;
-          }
-
-          // Simulate progress
-          const progressInterval = setInterval(() => {
-            setUploadProgress(prev => {
-              if (prev >= 90) {
-                clearInterval(progressInterval);
-                return 90;
-              }
-              return prev + 10;
-            });
-          }, 200);
-
-          // Simulate upload delay
-          await new Promise(resolve => setTimeout(resolve, 2000));
-
-          clearInterval(progressInterval);
-          setUploadProgress(100);
-
-          // Simulate response with image URL
-          const mockImagePath = `uploads/${Date.now()}_${selectedImage.name}`;
-          
-          // Update form data with new image URL
-          setFormData(prev => ({
-            ...prev,
-            image: mockImagePath
-          }));
-
-          // Clear selected image
-          setSelectedImage(null);
-
-          return true;
-        } catch (err) {
-          Swal.showValidationMessage(
-            `Upload Failed: ${err.response?.data?.message || 'Please try again'}`
-          );
-          return false;
-        } finally {
-          setImageUploading(false);
-          setUploadProgress(0);
-        }
-      },
-      allowOutsideClick: () => !Swal.isLoading()
-    });
-
-    if (result.isConfirmed) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Success!',
-        text: 'Image uploaded successfully!',
-        confirmButtonColor: '#4f46e5',
-        timer: 1500,
-        timerProgressBar: true,
-        showConfirmButton: false
-      });
-    }
-  };
-
   // Remove selected image
   const handleRemoveImage = () => {
     Swal.fire({
@@ -318,6 +220,24 @@ const AddProduct = () => {
       return false;
     }
 
+    // Validasi Image - REQUIRED!
+    if (!selectedImage && !previewImage) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Validation Error',
+        text: 'Product image is required. Please select an image.',
+        confirmButtonColor: '#4f46e5',
+      });
+      const uploadArea = document.querySelector('.image-upload-area');
+      if (uploadArea) {
+        uploadArea.classList.add('border-red-500', 'bg-red-900/20');
+        setTimeout(() => {
+          uploadArea.classList.remove('border-red-500', 'bg-red-900/20');
+        }, 3000);
+      }
+      return false;
+    }
+
     if (!description.trim()) {
       Swal.fire({
         icon: 'error',
@@ -329,32 +249,6 @@ const AddProduct = () => {
     }
 
     return true;
-  };
-
-  // Fungsi untuk upload image setelah product dibuat
-  const uploadImageAfterProductCreated = async (productId, token) => {
-    if (!selectedImage) return null;
-
-    try {
-      console.log('Uploading image for product ID:', productId);
-      const response = await updateProductImage(productId, selectedImage, token);
-      console.log('Image upload response:', response);
-      
-      // Update preview dengan URL dari server
-      if (response.data?.image) {
-        const imageUrl = getImageUrl(response.data.image);
-        setPreviewImage(imageUrl);
-        return response.data.image;
-      } else if (response.image) {
-        const imageUrl = getImageUrl(response.image);
-        setPreviewImage(imageUrl);
-        return response.image;
-      }
-      return null;
-    } catch (error) {
-      console.error('Error uploading image after product created:', error);
-      throw error;
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -390,8 +284,8 @@ const AddProduct = () => {
             <p class="text-sm text-gray-700">
               <span class="font-medium">Name:</span> ${formData.name}<br>
               <span class="font-medium">Price:</span> ${formatPrice(parseInt(formData.price) || 0)}<br>
-              <span class="font-medium">Stock:</span> ${formData.qty} units
-              ${selectedImage ? `<br><span class="font-medium">Image:</span> <span class="text-green-600">✅ Will be uploaded</span>` : ''}
+              <span class="font-medium">Stock:</span> ${formData.qty} units<br>
+              <span class="font-medium">Image:</span> <span class="text-green-600">✅ Selected</span>
             </p>
           </div>
         </div>
@@ -414,7 +308,7 @@ const AddProduct = () => {
             return false;
           }
 
-          // 1. Buat product dulu
+          // STEP 1: Buat product dulu
           const payload = {
             name: formData.name,
             qty: parseInt(formData.qty),
@@ -431,15 +325,47 @@ const AddProduct = () => {
           const newProductId = productResponse.data?.id || productResponse.id;
           setProductId(newProductId);
 
-          // 2. Jika ada gambar yang dipilih, upload setelah product berhasil dibuat
+          // STEP 2: Upload image setelah product berhasil dibuat
           if (selectedImage && newProductId) {
             try {
               console.log('Uploading image for new product...');
-              await uploadImageAfterProductCreated(newProductId, token);
+              console.log('Product ID:', newProductId);
+              console.log('Selected image:', selectedImage);
+
+              // INI YANG PENTING - PAKAI updateProductImage
+              const uploadResponse = await updateProductImage(newProductId, selectedImage, token);
+              console.log('Image upload response:', uploadResponse);
+
+              // Update form data dengan image path dari response
+              if (uploadResponse.data?.image) {
+                const imagePath = uploadResponse.data.image;
+                const imageUrl = getImageUrl(imagePath);
+                setFormData(prev => ({
+                  ...prev,
+                  image: imagePath
+                }));
+                setPreviewImage(imageUrl);
+                console.log('Image saved to database:', imagePath);
+              } else if (uploadResponse.image) {
+                const imagePath = uploadResponse.image;
+                const imageUrl = getImageUrl(imagePath);
+                setFormData(prev => ({
+                  ...prev,
+                  image: imagePath
+                }));
+                setPreviewImage(imageUrl);
+                console.log('Image saved to database:', imagePath);
+              }
+
+              // Clear selected image setelah upload berhasil
+              setSelectedImage(null);
+              if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+              }
+
             } catch (uploadError) {
               console.error('Error uploading image:', uploadError);
               // Product tetap dibuat meskipun upload gambar gagal
-              // Tapi kita tampilkan warning
               Swal.showValidationMessage(
                 `Product created but image upload failed: ${uploadError.message || 'Please try again later'}`
               );
@@ -473,7 +399,7 @@ const AddProduct = () => {
             </div>
             <p class="text-lg font-semibold text-gray-800">Product created successfully!</p>
             ${previewImage ? `<img src="${previewImage}" alt="${formData.name}" class="w-24 h-24 object-cover rounded-lg mx-auto mt-4 border border-gray-200 shadow-lg">` : ''}
-            ${selectedImage ? '<p class="text-sm text-green-600 mt-2">✅ Image uploaded successfully!</p>' : ''}
+            <p class="text-sm text-green-600 mt-2">✅ Image uploaded successfully!</p>
           </div>
         `,
         timer: 2000,
@@ -542,6 +468,7 @@ const AddProduct = () => {
         });
         setSelectedImage(null);
         setPreviewImage('');
+        setProductId(null);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -770,8 +697,7 @@ const AddProduct = () => {
                     {/* Image Upload Section */}
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-3">
-                        Product Image
-                        <span className="text-gray-400 ml-1">(Optional)</span>
+                        Product Image <span className="text-red-500">*</span>
                       </label>
 
                       <div className="space-y-4">
@@ -838,10 +764,10 @@ const AddProduct = () => {
                         <div
                           onDragOver={handleDragOver}
                           onDrop={handleDrop}
-                          className={`relative overflow-hidden border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${
-                            selectedImage
-                              ? 'border-yellow-500 bg-yellow-900/20'
-                              : 'border-gray-700 hover:border-purple-500 bg-gray-900/30 hover:bg-gray-900/50'
+                          className={`image-upload-area relative overflow-hidden border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${
+                            selectedImage || previewImage
+                              ? 'border-green-500/50 bg-green-900/10'
+                              : 'border-gray-700 bg-gray-900/30 hover:bg-gray-900/50 hover:border-purple-500'
                           }`}
                           onClick={() => fileInputRef.current?.click()}
                         >
@@ -852,26 +778,35 @@ const AddProduct = () => {
                             onChange={handleImageSelect}
                             className="hidden"
                             disabled={imageUploading || loading}
+                            required
                           />
 
                           <div className="space-y-4">
                             <div className="text-5xl">
-                              {selectedImage ? '📁' : '📤'}
+                              {selectedImage || previewImage ? '✅' : '📤'}
                             </div>
                             <div>
                               <p className="text-gray-200 font-medium text-lg">
-                                {selectedImage ? 'Image selected!' : 'Drag & drop or click to upload'}
+                                {selectedImage || previewImage 
+                                  ? 'Image selected!' 
+                                  : 'Drag & drop or click to upload'
+                                }
                               </p>
                               <p className="text-sm text-gray-400 mt-2">
-                                PNG, JPG, JPEG up to 5MB
+                                PNG, JPG, JPEG up to 5MB <span className="text-red-500">*Required</span>
                               </p>
+                              {!selectedImage && !previewImage && (
+                                <p className="text-xs text-yellow-400 mt-1">
+                                  ⚠️ Please select an image
+                                </p>
+                              )}
                             </div>
                             <div className="pt-4">
-                              <div className="inline-flex items-center px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-gray-300 text-sm">
+                              <div className="inline-flex items-center px-4 py-2 border border-gray-700 bg-gray-800/50 rounded-lg text-gray-300 text-sm">
                                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                Click here to browse files
+                                {selectedImage || previewImage ? 'Image uploaded ✓' : 'Click here to browse files'}
                               </div>
                             </div>
                           </div>
@@ -881,55 +816,16 @@ const AddProduct = () => {
                           <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-blue-500/10 to-cyan-500/10 rounded-full translate-x-1/3 translate-y-1/3"></div>
                         </div>
 
-                        {/* Image Action Buttons */}
-                        <div className="flex flex-wrap gap-3">
-                          {selectedImage && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={handleImageUpload}
-                                disabled={imageUploading || loading}
-                                className={`relative overflow-hidden px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 ${
-                                  imageUploading
-                                    ? 'bg-green-700 cursor-not-allowed text-white'
-                                    : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg shadow-green-500/25'
-                                }`}
-                              >
-                                <div className="absolute inset-0 animate-shimmer"></div>
-                                <div className="relative flex items-center">
-                                  {imageUploading ? (
-                                    <>
-                                      <svg className="animate-spin h-4 w-4 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                      </svg>
-                                      Uploading...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                      </svg>
-                                      Upload Image
-                                    </>
-                                  )}
-                                </div>
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={handleRemoveImage}
-                                disabled={imageUploading || loading}
-                                className="px-5 py-2.5 border border-red-700/50 text-red-300 bg-gradient-to-r from-red-900/30 to-orange-900/30 hover:from-red-900/50 hover:to-orange-900/50 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105"
-                              >
-                                <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                                Remove
-                              </button>
-                            </>
-                          )}
-                        </div>
+                        {/* Informasi: Image akan diupload setelah product dibuat */}
+                        {selectedImage && !productId && (
+                          <p className="text-sm text-yellow-400 flex items-center">
+                            <svg className="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Image will be uploaded after product is created
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -1058,7 +954,7 @@ const AddProduct = () => {
                             <div className="flex justify-between items-center p-2 bg-gray-900/50 rounded-lg">
                               <span className="text-yellow-300">Image:</span>
                               <span className={`font-medium ${previewImage ? 'text-green-400' : 'text-red-400'}`}>
-                                {previewImage ? '✅ Available' : '❌ Not set'}
+                                {previewImage ? '✅ Available' : '❌ Required'}
                               </span>
                             </div>
                           </div>
@@ -1164,7 +1060,7 @@ const AddProduct = () => {
                         </li>
                         <li className="flex items-start">
                           <span className="mr-2">📸</span>
-                          <span>High-quality product images increase conversion rates</span>
+                          <span>High-quality product images increase conversion rates - <span className="text-red-400">Required!</span></span>
                         </li>
                         <li className="flex items-start">
                           <span className="mr-2">📝</span>
