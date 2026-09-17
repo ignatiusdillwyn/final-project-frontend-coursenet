@@ -290,6 +290,37 @@ const Login = () => {
                   </span>
                 )}
               </button>
+
+              {/* ===== DEMO ACCOUNT SECTION ===== */}
+              <div className="relative mt-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="px-3 bg-white text-gray-500 font-medium">
+                    Or try demo account
+                  </span>
+                </div>
+              </div>
+
+              {/* Demo Credentials Info */}
+              <div className="mt-4 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-sm">💡</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-amber-800 mb-2">Demo Credentials:</p>
+                    <div className="space-y-1 text-xs text-amber-700">
+                      <p className="flex items-center">
+                        <code className="bg-amber-100 px-2 py-0.5 rounded">Username: andi@gmail.com</code>
+                        <span className="mx-1">/</span>
+                        <code className="bg-amber-100 px-2 py-0.5 rounded">Password: andi12345</code>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </form>
 
             {/* Sign Up Section - Simpler and Clear */}
