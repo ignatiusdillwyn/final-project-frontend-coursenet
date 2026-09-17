@@ -34,3 +34,6 @@ https://react-icons.github.io/react-icons/## Expanding the ESLint configuration
 Cara menjalankan project:
 1. npm install
 2. npm run dev
+
+Untuk Deploy ke RumahWeb
+Cek bagian vite config sama router index.jsx
